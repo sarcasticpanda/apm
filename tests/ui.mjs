@@ -16,8 +16,8 @@ let live;
 try {
  await page.goto(base,{waitUntil:'networkidle'});
  await page.locator('.app-card').first().waitFor();
- assert.equal(await page.locator('.app-card').count(),3);
- await noOverflow();await shot('desktop');await shot('full-page',true);passed('Library loads three researched guides; desktop fits');
+ assert.equal(await page.locator('.app-card').count(),6);
+ await noOverflow();await shot('desktop');await shot('full-page',true);passed('Library loads six researched guides; desktop fits');
  await page.keyboard.press('/');assert.equal(await page.locator('#search').evaluate(el=>el===document.activeElement),true);
  await page.locator('#search').fill('slack');assert.equal(await page.locator('.app-card').count(),1);
  await page.locator('#search').fill('nonsense-provider');await page.getByText('No matching guide yet.').waitFor();

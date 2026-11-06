@@ -32,12 +32,16 @@ function logo(guide) {
 }
 function moveTo(element, focusTarget) {
   element.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth', block: 'start' });
-  if (focusTarget) { focusTarget.tabIndex = -1; focusTarget.focus({ preventScroll: true }); }
+  if (focusTarget) {
+    // Only make non-interactive targets (headings) focusable; giving a button tabIndex -1 would drop it from the Tab order.
+    if (!focusTarget.matches('a[href], button, input, select, textarea, summary, [tabindex]')) focusTarget.tabIndex = -1;
+    focusTarget.focus({ preventScroll: true });
+  }
 }
-const GATE_LEVELS = { none: 'No gate found', possible: 'May apply', required: 'Required', depends: 'Depends on scopes', always: 'Every user' };
+const GATE_LEVELS = { none: 'No gate found', possible: 'May apply', required: 'Required', depends: 'Depends on your setup', always: 'Every user' };
 function routeStops(g) {
   const gates = list(g.gates, 3).filter(gate => gate && GATE_LEVELS[gate.level]);
-  return [{ who: 'Register', level: 'start', status: 'Self-service' }, ...gates].map(stop => `<span class="stop stop-${stop.level}"><span class="gate-mark mark-${stop.level}" aria-hidden="true"></span><span class="stop-text"><span class="stop-label">${escapeHtml(stop.who)}</span><span class="stop-status">${escapeHtml(stop.status)}</span></span></span>`).join('');
+  return [{ who: 'Register', level: 'start', status: 'Self-service' }, ...gates].map(stop => `<span class="stop stop-${stop.level}"><span class="gate-mark mark-${stop.level}" aria-hidden="true"></span><span class="stop-text"><span class="stop-label">${escapeHtml(stop.who)}</span><span class="visually-hidden">: </span><span class="stop-status">${escapeHtml(stop.status)}</span><span class="visually-hidden">. </span></span></span>`).join('');
 }
 function renderLibrary() {
   const query = searchInput.value.trim().toLowerCase();
@@ -80,7 +84,7 @@ function ownerClass(owner = '') {
 function gatesMarkup(gates, sources, prefix) {
   const rows = list(gates, 4).filter(gate => gate && GATE_LEVELS[gate.level]);
   if (!rows.length) return '';
-  return `<section class="guide-block gates-block" aria-labelledby="${prefix}-gates-title"><h3 id="${prefix}-gates-title">Who has to say yes</h3><p>Provider review, customer administration, and user consent are separate decisions with separate owners. Plan for each one that applies.</p><ol class="gate-route">${rows.map(gate => `<li class="gate gate-${gate.level}"><span class="gate-mark mark-${gate.level}" aria-hidden="true"></span><span class="gate-who">${escapeHtml(gate.who)}</span><strong class="gate-status">${escapeHtml(gate.status)}</strong><p>${escapeHtml(gate.note)} ${citations(gate.sourceIds, sources, prefix)}</p></li>`).join('')}</ol></section>`;
+  return `<section class="guide-block gates-block" aria-labelledby="${prefix}-gates-title"><h3 id="${prefix}-gates-title">Who has to say yes</h3><p>Provider review, customer administration, and user consent are separate decisions with separate owners. Plan for each one that applies.</p><ol class="gate-route">${rows.map(gate => `<li class="gate gate-${gate.level}"><span class="gate-mark mark-${gate.level}" aria-hidden="true"></span><span class="gate-who">${escapeHtml(gate.who)}<span class="visually-hidden">: </span></span><strong class="gate-status">${escapeHtml(gate.status)}<span class="visually-hidden">. </span></strong><p>${escapeHtml(gate.note)} ${citations(gate.sourceIds, sources, prefix)}</p></li>`).join('')}</ol></section>`;
 }
 function progressFor(id, count) {
   return list(storage.get(`oauthpath:${id}:steps`), count).filter(i => Number.isInteger(i) && i >= 0 && i < count);

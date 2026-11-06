@@ -1,5 +1,7 @@
+import puppeteer from '@cloudflare/puppeteer';
 import { research, ResearchError } from './research.mjs';
 import { FONTS } from './fonts.mjs';
+import { RENDER_USER_AGENT, allowSubrequest, extractPage } from './render.mjs';
 
 // Explicit allow-list: only built browser assets are served, never source or configuration.
 const PUBLIC_PATHS = new Set(['/', '/index.html', '/styles.css', '/app.js', '/icons.js', '/favicon.svg', '/guides.json', ...Object.keys(FONTS).map((file) => `/fonts/${file}`)]);
@@ -8,10 +10,26 @@ const limits = new Map();
 const headers = { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store', 'x-content-type-options': 'nosniff', 'referrer-policy': 'strict-origin-when-cross-origin' };
 const json = (body, status = 200) => new Response(JSON.stringify(body), { status, headers });
 
+// Cloudflare Browser Rendering: used only when a documentation page has no server-rendered text.
+function browserRenderer(binding) {
+  if (!binding) return undefined;
+  return async (url) => {
+    const browser = await puppeteer.launch(binding);
+    try {
+      const page = await browser.newPage();
+      await page.setUserAgent(RENDER_USER_AGENT);
+      await page.setRequestInterception(true);
+      page.on('request', (request) => (allowSubrequest(request.url(), request.resourceType()) ? request.continue() : request.abort()));
+      await page.goto(url, { waitUntil: 'networkidle2', timeout: 15000 });
+      return await page.evaluate(extractPage);
+    } finally { await browser.close(); }
+  };
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
-    if (url.pathname === '/api/health') return json({ ok: true, research: 'public-documentation', ai: Boolean(env.AI) });
+    if (url.pathname === '/api/health') return json({ ok: true, research: 'public-documentation', ai: Boolean(env.AI), browser: Boolean(env.BROWSER) });
     if (url.pathname === '/api/research') {
       if (request.method !== 'POST') return json({ error: 'Use POST to start research.' }, 405);
       if (!String(request.headers.get('content-type')).startsWith('application/json')) return json({ error: 'Send JSON input.' }, 415);
@@ -31,7 +49,7 @@ export default {
         if (body.length > 4096) return json({ error: 'Request is too large.' }, 413);
         let input;
         try { input = JSON.parse(body); } catch { return json({ error: 'Enter a valid app name or website.' }, 400); }
-        return json(await research(input, env));
+        return json(await research(input, env, { renderPage: browserRenderer(env.BROWSER) }));
       } catch (error) {
         return json({ error: error instanceof ResearchError ? error.message : 'Research could not finish. Please try again.' }, error.status || 502);
       }

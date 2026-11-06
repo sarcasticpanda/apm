@@ -18,29 +18,114 @@
     "evidenceStatus": "Official documentation reviewed. No provider account setup or token exchange attempted.",
     "firstAction": "Compare OAuth Apps and GitHub Apps, then open your account's Developer settings.",
     "steps": [
-      ["Choose the app type", "An OAuth App acts as a user. Consider a GitHub App for more precise repository permissions or app-only automation.", "YOU + AGENT"],
-      ["Register the app", "Open Settings → Developer settings → OAuth Apps. Enter a public app name, homepage, and callback URL. The current form supports up to 10 callbacks.", "YOU"],
-      ["Implement and protect authorization", "Use the documented code flow, validate state, use PKCE where supported, and keep the client secret on your backend. A redirect_uri must match the callback's host and port and use a path under it; avoid wildcard callback matching unless you control every subdomain and path.", "YOU + AGENT"],
-      ["Handle token expiry", "New registration instructions enable expiring user tokens by default. Build refresh handling and test disconnect/reconnect rather than assuming tokens last forever.", "YOU + AGENT"],
-      ["Test customer organization access", "Try personal and organization resources separately. If access is restricted, ask the customer's organization owner to review the app; user consent alone is insufficient.", "YOU + CUSTOMER ADMIN"]
+      [
+        "Choose the app type",
+        "An OAuth App acts as a user. Consider a GitHub App for more precise repository permissions or app-only automation.",
+        "YOU + AGENT"
+      ],
+      [
+        "Register the app",
+        "Open Settings → Developer settings → OAuth Apps. Enter a public app name, homepage, and callback URL. The current form supports up to 10 callbacks.",
+        "YOU"
+      ],
+      [
+        "Implement and protect authorization",
+        "Use the documented code flow, validate state, use PKCE where supported, and keep the client secret on your backend. A redirect_uri must match the callback's host and port and use a path under it; avoid wildcard callback matching unless you control every subdomain and path.",
+        "YOU + AGENT"
+      ],
+      [
+        "Handle token expiry",
+        "New registration instructions enable expiring user tokens by default. Build refresh handling and test disconnect/reconnect rather than assuming tokens last forever.",
+        "YOU + AGENT"
+      ],
+      [
+        "Test customer organization access",
+        "Try personal and organization resources separately. If access is restricted, ask the customer's organization owner to review the app; user consent alone is insufficient.",
+        "YOU + CUSTOMER ADMIN"
+      ]
     ],
-    "sourceIdsByStep": [[1], [1], [2], [1, 2], [3]],
+    "sourceIdsByStep": [
+      [
+        1
+      ],
+      [
+        1
+      ],
+      [
+        2
+      ],
+      [
+        1,
+        2
+      ],
+      [
+        3
+      ]
+    ],
     "gates": [
-      { "who": "Provider review", "level": "none", "status": "Not in the setup docs", "note": "Registration is self-service. The OAuth App docs describe no central app review.", "sourceIds": [1] },
-      { "who": "Customer admin", "level": "possible", "status": "Possible", "note": "Organizations with OAuth app access restrictions require an owner to approve your app.", "sourceIds": [3] },
-      { "who": "User consent", "level": "always", "status": "Every user", "note": "Each user authorizes your app and the scopes it requests.", "sourceIds": [2] }
+      {
+        "who": "Provider review",
+        "level": "none",
+        "status": "Not in the setup docs",
+        "note": "Registration is self-service. The OAuth App docs describe no central app review.",
+        "sourceIds": [
+          1
+        ]
+      },
+      {
+        "who": "Customer admin",
+        "level": "possible",
+        "status": "Possible",
+        "note": "Organizations with OAuth app access restrictions require an owner to approve your app.",
+        "sourceIds": [
+          3
+        ]
+      },
+      {
+        "who": "User consent",
+        "level": "always",
+        "status": "Every user",
+        "note": "Each user authorizes your app and the scopes it requests.",
+        "sourceIds": [
+          2
+        ]
+      }
     ],
     "blocker": "If personal access works but private organization data fails, check the organization's OAuth app policy. Send the owner the app name, required scopes, and intended use. Do not keep requesting wider scopes to solve an approval block.",
     "handoffs": {
-      "agent": ["Compare app types and draft a minimum-permission plan.", "Generate callback, state, PKCE, and token-lifecycle implementation tasks for developer review."],
-      "human": ["Register the provider app, store credentials, and run an authorized account test.", "Request customer organization approval when needed."],
-      "provider": ["Customer organization owners decide whether to allow access to their resources."]
+      "agent": [
+        "Compare app types and draft a minimum-permission plan.",
+        "Generate callback, state, PKCE, and token-lifecycle implementation tasks for developer review."
+      ],
+      "human": [
+        "Register the provider app, store credentials, and run an authorized account test.",
+        "Request customer organization approval when needed."
+      ],
+      "provider": [
+        "Customer organization owners decide whether to allow access to their resources."
+      ]
     },
-    "uncertainties": ["No account-level setup was attempted; console appearance and account eligibility were not tested.", "Customer administrator turnaround is not controlled by GitHub registration.", "Enterprise Server versions can differ from GitHub.com token behavior."],
+    "uncertainties": [
+      "No account-level setup was attempted; console appearance and account eligibility were not tested.",
+      "Customer administrator turnaround is not controlled by GitHub registration.",
+      "Enterprise Server versions can differ from GitHub.com token behavior."
+    ],
     "sources": [
-      ["Register an OAuth App", "https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/creating-an-oauth-app", "Official · registration"],
-      ["Authorization, redirects, and tokens", "https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps", "Official · OAuth flow"],
-      ["Organization access restrictions", "https://docs.github.com/en/organizations/managing-oauth-access-to-your-organizations-data/about-oauth-app-access-restrictions", "Official · admin approval"]
+      [
+        "Register an OAuth App",
+        "https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/creating-an-oauth-app",
+        "Official · registration"
+      ],
+      [
+        "Authorization, redirects, and tokens",
+        "https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps",
+        "Official · OAuth flow"
+      ],
+      [
+        "Organization access restrictions",
+        "https://docs.github.com/en/organizations/managing-oauth-access-to-your-organizations-data/about-oauth-app-access-restrictions",
+        "Official · admin approval"
+      ]
     ]
   },
   {
@@ -62,33 +147,142 @@
     "evidenceStatus": "Current Slack Developer Docs reviewed. No workspace app, install, or Marketplace submission attempted.",
     "firstAction": "Check Marketplace suitability and whether your planned distribution is internal, a pilot, or commercial.",
     "steps": [
-      ["Check whether the product is eligible", "Read the current Marketplace guidelines before building. MCP-only tools, broad data exports, private-beta products, and low-usage apps can be unsuitable.", "YOU + AGENT"],
-      ["Create the app and choose permissions", "Use a development workspace. Map features to bot scopes or user scopes; basic Sign in with Slack scopes use a separate flow from API scopes.", "YOU + AGENT"],
-      ["Build OAuth v2 and pilot distribution", "Configure an HTTPS redirect and exchange the authorization code on your backend. Complete Manage Distribution's checklist to allow pilot installs in other workspaces.", "YOU + AGENT"],
-      ["Confirm current usage prerequisites", "Slack requires at least 10 active workspace installations when you submit, and the app must stay at 10 or more throughout the entire review. Confirm eligibility in the submission dashboard before scheduling launch.", "YOU"],
-      ["Prepare a reviewable submission", "Provide test accounts with dummy data, a functioning install flow, and a demo of installation through uninstallation. Explain why the working features need their scopes.", "YOU + AGENT"],
-      ["Submit and resolve feedback", "Submit through the app settings, address reviewer issues, and allow time for another pass. Preliminary resubmissions can reset queue position; publish after approval.", "YOU + SLACK"]
+      [
+        "Check whether the product is eligible",
+        "Read the current Marketplace guidelines before building. MCP-only tools, broad data exports, private-beta products, and low-usage apps can be unsuitable.",
+        "YOU + AGENT"
+      ],
+      [
+        "Create the app and choose permissions",
+        "Use a development workspace. Map features to bot scopes or user scopes; basic Sign in with Slack scopes use a separate flow from API scopes.",
+        "YOU + AGENT"
+      ],
+      [
+        "Build OAuth v2 and pilot distribution",
+        "Configure an HTTPS redirect and exchange the authorization code on your backend. Complete Manage Distribution's checklist to allow pilot installs in other workspaces.",
+        "YOU + AGENT"
+      ],
+      [
+        "Confirm current usage prerequisites",
+        "Slack requires at least 10 active workspace installations when you submit, and the app must stay at 10 or more throughout the entire review. Confirm eligibility in the submission dashboard before scheduling launch.",
+        "YOU"
+      ],
+      [
+        "Prepare a reviewable submission",
+        "Provide test accounts with dummy data, a functioning install flow, and a demo of installation through uninstallation. Explain why the working features need their scopes.",
+        "YOU + AGENT"
+      ],
+      [
+        "Submit and resolve feedback",
+        "Submit through the app settings, address reviewer issues, and allow time for another pass. Preliminary resubmissions can reset queue position; publish after approval.",
+        "YOU + SLACK"
+      ]
     ],
-    "sourceIdsByStep": [[4, 5], [1], [1, 2], [3, 5, 6], [3], [3]],
+    "sourceIdsByStep": [
+      [
+        4,
+        5
+      ],
+      [
+        1
+      ],
+      [
+        1,
+        2
+      ],
+      [
+        3,
+        5,
+        6
+      ],
+      [
+        3
+      ],
+      [
+        3
+      ]
+    ],
     "gates": [
-      { "who": "Provider review", "level": "required", "status": "For commercial launch", "note": "Commercially distributed apps go through Slack Marketplace review. An unlisted pilot is a separate path.", "sourceIds": [3, 4] },
-      { "who": "Customer admin", "level": "possible", "status": "Possible", "note": "Workspace administrators can restrict which apps members install.", "sourceIds": [2] },
-      { "who": "User consent", "level": "always", "status": "Every install", "note": "The installing user approves the requested bot and user scopes.", "sourceIds": [1] }
+      {
+        "who": "Provider review",
+        "level": "required",
+        "status": "For commercial launch",
+        "note": "Commercially distributed apps go through Slack Marketplace review. An unlisted pilot is a separate path.",
+        "sourceIds": [
+          3,
+          4
+        ]
+      },
+      {
+        "who": "Customer admin",
+        "level": "possible",
+        "status": "Possible",
+        "note": "Workspace administrators can restrict which apps members install.",
+        "sourceIds": [
+          2
+        ]
+      },
+      {
+        "who": "User consent",
+        "level": "always",
+        "status": "Every install",
+        "note": "The installing user approves the requested bot and user scopes.",
+        "sourceIds": [
+          1
+        ]
+      }
     ],
     "blocker": "An OAuth integration may work technically but fail Marketplace suitability or usage requirements. Start an allowed pilot, build meaningful Slack functionality, and check current eligibility. Avoid promising commercial launch before review.",
     "handoffs": {
-      "agent": ["Find required scopes and flag Marketplace suitability risks.", "Draft review instructions, scope explanations, and a test-account checklist."],
-      "human": ["Register the app and test with permitted workspaces.", "Provide review accounts and a real product demo; respond to reviewer questions."],
-      "provider": ["Slack reviewers approve the Marketplace listing.", "Customer workspace administrators can separately approve or block installation."]
+      "agent": [
+        "Find required scopes and flag Marketplace suitability risks.",
+        "Draft review instructions, scope explanations, and a test-account checklist."
+      ],
+      "human": [
+        "Register the app and test with permitted workspaces.",
+        "Provide review accounts and a real product demo; respond to reviewer questions."
+      ],
+      "provider": [
+        "Slack reviewers approve the Marketplace listing.",
+        "Customer workspace administrators can separately approve or block installation."
+      ]
     },
-    "uncertainties": ["The review page requires at least 10 active workspaces, while the guidelines describe low-usage apps as installed on fewer than 10 active workspaces and having fewer than 20 monthly active users. These rules are not identical: confirm current dashboard eligibility rather than assuming a user-count exception.", "Slack's feedback windows vary with queue volume and do not guarantee total time to approval.", "No workspace installation or review was attempted."],
+    "uncertainties": [
+      "The review page requires at least 10 active workspaces, while the guidelines describe low-usage apps as installed on fewer than 10 active workspaces and having fewer than 20 monthly active users. These rules are not identical: confirm current dashboard eligibility rather than assuming a user-count exception.",
+      "Slack's feedback windows vary with queue volume and do not guarantee total time to approval.",
+      "No workspace installation or review was attempted."
+    ],
     "sources": [
-      ["Install with OAuth v2", "https://docs.slack.dev/authentication/installing-with-oauth/", "Official · OAuth flow"],
-      ["App lifecycle and distribution", "https://docs.slack.dev/app-management/distribution/", "Official · distribution"],
-      ["Marketplace review process", "https://docs.slack.dev/slack-marketplace/slack-marketplace-review-guide/", "Official · review and timing"],
-      ["Commercial distribution policy update", "https://docs.slack.dev/changelog/2025/05/29/tos-updates/", "Official · commercial path"],
-      ["Marketplace suitability and requirements", "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/", "Official · eligibility"],
-      ["Installation prerequisite update", "https://docs.slack.dev/changelog/2026/09/01/slack-marketplace-install-requirement/", "Official · active workspaces"]
+      [
+        "Install with OAuth v2",
+        "https://docs.slack.dev/authentication/installing-with-oauth/",
+        "Official · OAuth flow"
+      ],
+      [
+        "App lifecycle and distribution",
+        "https://docs.slack.dev/app-management/distribution/",
+        "Official · distribution"
+      ],
+      [
+        "Marketplace review process",
+        "https://docs.slack.dev/slack-marketplace/slack-marketplace-review-guide/",
+        "Official · review and timing"
+      ],
+      [
+        "Commercial distribution policy update",
+        "https://docs.slack.dev/changelog/2025/05/29/tos-updates/",
+        "Official · commercial path"
+      ],
+      [
+        "Marketplace suitability and requirements",
+        "https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/",
+        "Official · eligibility"
+      ],
+      [
+        "Installation prerequisite update",
+        "https://docs.slack.dev/changelog/2026/09/01/slack-marketplace-install-requirement/",
+        "Official · active workspaces"
+      ]
     ]
   },
   {
@@ -110,32 +304,616 @@
     "evidenceStatus": "Official identity and authorization docs reviewed. No Cloud project or verification submission created.",
     "firstAction": "List the exact Google APIs and scopes your product needs, then check their classifications.",
     "steps": [
-      ["Choose the audience", "Use Internal only for the eligible Workspace organization audience; choose External for users outside it. Keep a development project separate from production.", "YOU"],
-      ["Classify the minimum scopes", "Map each feature to the narrowest API scope. Basic identity is different from sensitive or restricted access; check the API's current scope documentation.", "YOU + AGENT"],
-      ["Configure identity and clients", "Prepare a public homepage, privacy policy, contacts, domain ownership, and the appropriate OAuth client redirect settings. Describe the real use of user data.", "YOU"],
-      ["Run a limited account test", "Use the Testing audience and eligible test accounts. Check consent, actual API access, denial, disconnect, and token refresh before applying for public use.", "YOU + AGENT"],
-      ["Verify and publish branding", "When required, run Verify Branding and then Publish branding. Automated evaluation usually takes minutes; a manual fallback commonly takes 2-3 business days.", "YOU + GOOGLE"],
-      ["Submit data-access evidence", "For applicable sensitive or restricted scopes, provide a feature demo and justification. Apps that access restricted data from or through a third-party server must complete an annual security assessment by a Google-approved assessor; check how your architecture is classified and whether an exception applies.", "YOU + GOOGLE"]
+      [
+        "Choose the audience",
+        "Use Internal only for the eligible Workspace organization audience; choose External for users outside it. Keep a development project separate from production.",
+        "YOU"
+      ],
+      [
+        "Classify the minimum scopes",
+        "Map each feature to the narrowest API scope. Basic identity is different from sensitive or restricted access; check the API's current scope documentation.",
+        "YOU + AGENT"
+      ],
+      [
+        "Configure identity and clients",
+        "Prepare a public homepage, privacy policy, contacts, domain ownership, and the appropriate OAuth client redirect settings. Describe the real use of user data.",
+        "YOU"
+      ],
+      [
+        "Run a limited account test",
+        "Use the Testing audience and eligible test accounts. Check consent, actual API access, denial, disconnect, and token refresh before applying for public use.",
+        "YOU + AGENT"
+      ],
+      [
+        "Verify and publish branding",
+        "When required, run Verify Branding and then Publish branding. Automated evaluation usually takes minutes; a manual fallback commonly takes 2-3 business days.",
+        "YOU + GOOGLE"
+      ],
+      [
+        "Submit data-access evidence",
+        "For applicable sensitive or restricted scopes, provide a feature demo and justification. Apps that access restricted data from or through a third-party server must complete an annual security assessment by a Google-approved assessor; check how your architecture is classified and whether an exception applies.",
+        "YOU + GOOGLE"
+      ]
     ],
-    "sourceIdsByStep": [[1], [2, 3, 5], [4], [1], [4], [2, 3]],
+    "sourceIdsByStep": [
+      [
+        1
+      ],
+      [
+        2,
+        3,
+        5
+      ],
+      [
+        4
+      ],
+      [
+        1
+      ],
+      [
+        4
+      ],
+      [
+        2,
+        3
+      ]
+    ],
     "gates": [
-      { "who": "Provider review", "level": "depends", "status": "Depends on scopes", "note": "External apps may need brand verification; sensitive and restricted scopes add data-access review.", "sourceIds": [2, 3, 4] },
-      { "who": "Customer admin", "level": "possible", "status": "Possible", "note": "Google Workspace administrators can restrict which third-party apps access their users' data.", "sourceIds": [1] },
-      { "who": "User consent", "level": "always", "status": "Every user", "note": "Each user sees the consent screen and grants the requested scopes.", "sourceIds": [1] }
+      {
+        "who": "Provider review",
+        "level": "depends",
+        "status": "Depends on scopes",
+        "note": "External apps may need brand verification; sensitive and restricted scopes add data-access review.",
+        "sourceIds": [
+          2,
+          3,
+          4
+        ]
+      },
+      {
+        "who": "Customer admin",
+        "level": "possible",
+        "status": "Possible",
+        "note": "Google Workspace administrators can restrict which third-party apps access their users' data.",
+        "sourceIds": [
+          1
+        ]
+      },
+      {
+        "who": "User consent",
+        "level": "always",
+        "status": "Every user",
+        "note": "Each user sees the consent screen and grants the requested scopes.",
+        "sourceIds": [
+          1
+        ]
+      }
     ],
-    "blocker": "If verification asks for more evidence, show how each requested scope supports a working feature and remove unnecessary scopes. Check exceptions and restricted-data assessment needs early; a Workspace admin block requires the customer's admin even after Google verification.",
+    "blocker": "If verification asks for more evidence, show how each requested scope supports a working feature and remove unnecessary scopes. Check exceptions and restricted-data assessment needs early; a Workspace admin block requires the customer's admin even after Google verification. If users see \"Access blocked: Authorization Error\" saying the OAuth client was not found, the client ID is wrong or the client was deleted; our endpoint probe reproduced this exact screen with an unregistered client ID.",
     "handoffs": {
-      "agent": ["Map product features to documented scopes and collect review requirements.", "Draft scope justifications and a demo outline from your actual data flow."],
-      "human": ["Own the Cloud project and domains, configure credentials, and verify the real user journey.", "Approve data-use statements and submit the demonstration and review materials."],
-      "provider": ["Google evaluates branding and scope access.", "An approved assessor handles an applicable security assessment; Workspace admins retain customer-level control."]
+      "agent": [
+        "Map product features to documented scopes and collect review requirements.",
+        "Draft scope justifications and a demo outline from your actual data flow."
+      ],
+      "human": [
+        "Own the Cloud project and domains, configure credentials, and verify the real user journey.",
+        "Approve data-use statements and submit the demonstration and review materials."
+      ],
+      "provider": [
+        "Google evaluates branding and scope access.",
+        "An approved assessor handles an applicable security assessment; Workspace admins retain customer-level control."
+      ]
     },
-    "uncertainties": ["The restricted-scope page still contains a general 2-3 day brand estimate; the dedicated brand page distinguishes automated minutes from manual review. This guide uses that more specific explanation.", "Exceptions and assessment obligations depend on exact scopes, audience, and data architecture.", "Published durations are guidance, not a deadline. No console submission or assessment was attempted."],
+    "uncertainties": [
+      "The restricted-scope page still contains a general 2-3 day brand estimate; the dedicated brand page distinguishes automated minutes from manual review. This guide uses that more specific explanation.",
+      "Exceptions and assessment obligations depend on exact scopes, audience, and data architecture.",
+      "Published durations are guidance, not a deadline. No console submission or assessment was attempted."
+    ],
     "sources": [
-      ["Audience and app publishing states", "https://developers.google.com/identity/protocols/oauth2/production-readiness/overview", "Official · audience and admin controls"],
-      ["Sensitive scope verification", "https://developers.google.com/identity/protocols/oauth2/production-readiness/sensitive-scope-verification", "Official · sensitive review"],
-      ["Restricted scope verification", "https://developers.google.com/identity/protocols/oauth2/production-readiness/restricted-scope-verification", "Official · assessment and review"],
-      ["Brand verification", "https://developers.google.com/identity/verification/authentication-verification", "Official · brand timing"],
-      ["OAuth API scope directory", "https://developers.google.com/identity/protocols/oauth2/scopes", "Official · scope reference"]
+      [
+        "Audience and app publishing states",
+        "https://developers.google.com/identity/protocols/oauth2/production-readiness/overview",
+        "Official · audience and admin controls"
+      ],
+      [
+        "Sensitive scope verification",
+        "https://developers.google.com/identity/protocols/oauth2/production-readiness/sensitive-scope-verification",
+        "Official · sensitive review"
+      ],
+      [
+        "Restricted scope verification",
+        "https://developers.google.com/identity/protocols/oauth2/production-readiness/restricted-scope-verification",
+        "Official · assessment and review"
+      ],
+      [
+        "Brand verification",
+        "https://developers.google.com/identity/verification/authentication-verification",
+        "Official · brand timing"
+      ],
+      [
+        "OAuth API scope directory",
+        "https://developers.google.com/identity/protocols/oauth2/scopes",
+        "Official · scope reference"
+      ]
+    ]
+  },
+  {
+    "id": "dropbox",
+    "name": "Dropbox",
+    "mark": "DB",
+    "kind": "dropbox",
+    "effort": "Production review",
+    "band": "review",
+    "tagline": "Testing is self-service, but once 50 users link you have two weeks to get production approval or new links freeze.",
+    "time": "4-8 hours prep · planning estimate",
+    "wait": "Dropbox publishes no review duration. Applications are reviewed soon after the app links 50 users (some apps may qualify for early review), and from 50 linked users you have two weeks to apply and be approved before new links freeze.",
+    "waitSummary": "Not published; 2-week window",
+    "effortLabel": "Medium · user growth sets the deadline",
+    "summary": "A new Dropbox API app starts in development status, linked only to your account, and you can enable a limited number of test users. The hardest gate is production approval: once the app links 50 users you have two weeks to apply for and receive it, or new links freeze, and Dropbox publishes no review duration. Reviewers check branding, the developer terms, and that your permission is no broader than your features need.",
+    "caveat": "Development status allows up to 500 total users, but the 50-user deadline still applies, so plan the production application before a pilot grows. Apps with team scopes have a separate limit of a single development team, which you can raise to 5. Separately, customer team admins can block apps for their team.",
+    "estimateBasis": "Our estimate covers creating the app, choosing access and scopes, adapting an existing OAuth backend for the code flow, PKCE, and refresh tokens, adding branding, and drafting the production application. It excludes building your integration, writing a privacy policy from scratch, reaching 50 linked users, and Dropbox's review time. It is not a Dropbox estimate.",
+    "checkedAt": "2026-11-05",
+    "evidenceStatus": "Official documentation reviewed. No Developer Console app, token exchange, or production application attempted.",
+    "firstAction": "Choose App folder or Full Dropbox and list the minimum scopes, then click Create app in the Developer Console.",
+    "steps": [
+      [
+        "Choose access type and scopes",
+        "Pick App folder if you only need your app's own files, or Full Dropbox if you must reach existing content. Changing the access type later means deleting the app and creating a new one. If users only pick or save files, the Chooser or Saver needs no production approval.",
+        "YOU + AGENT"
+      ],
+      [
+        "Create the app and set redirects",
+        "In the Developer Console, click Create app, then choose the API, access type, and name. On the Settings tab, register the exact Redirect URIs. Turn on Allow public clients only if you use PKCE or the legacy implicit flow.",
+        "YOU"
+      ],
+      [
+        "Implement the code flow and tokens",
+        "Exchange the authorization code on your server, or use PKCE with S256 if the app cannot keep its secret, such as a single-page app or a desktop app without a server. Access tokens are short-lived; for background access add token_access_type=offline and store the refresh token securely.",
+        "YOU + AGENT"
+      ],
+      [
+        "Test with development users",
+        "Generate an access token for your own account, then click Enable additional users on the Settings tab to add testers. Apps with team scopes start with a single development team; click Enable additional teams to raise this to 5. A team admin must install them.",
+        "YOU + CUSTOMER ADMIN"
+      ],
+      [
+        "Apply for production early",
+        "Add 64x64 and 256x256 icons, a privacy policy, and accurate branding first; after approval you cannot change the app name yourself. Click Apply for production, explain how the app uses the API, and mention any planned features that need broader access.",
+        "YOU"
+      ],
+      [
+        "Watch the 50-user deadline",
+        "Dropbox reviews applications soon after the app links 50 users. Some apps may qualify for early review if you give evidence and a detailed explanation. From 50 linked users you have two weeks to apply and be approved, or new links freeze; unlinking users does not unfreeze the app.",
+        "YOU + DROPBOX"
+      ]
+    ],
+    "sourceIdsByStep": [
+      [
+        1,
+        2,
+        3
+      ],
+      [
+        3,
+        2
+      ],
+      [
+        2,
+        4
+      ],
+      [
+        3,
+        5
+      ],
+      [
+        1,
+        3
+      ],
+      [
+        1
+      ]
+    ],
+    "gates": [
+      {
+        "who": "Provider review",
+        "level": "required",
+        "status": "Required past 50 users",
+        "note": "To keep linking users after 50, the app needs production approval within two weeks. Dropbox checks branding, the terms, and permission breadth, and publishes no review duration.",
+        "sourceIds": [
+          1,
+          3
+        ]
+      },
+      {
+        "who": "Customer admin",
+        "level": "depends",
+        "status": "Required for team scopes",
+        "note": "A team admin must install apps that use team scopes. Admins on Dropbox team plans can also block all registered apps or specific ones.",
+        "sourceIds": [
+          5,
+          6
+        ]
+      },
+      {
+        "who": "User consent",
+        "level": "always",
+        "status": "Every user",
+        "note": "Each user signs in on dropbox.com and approves the access shown on the authorization page. That approval stays valid until it is explicitly revoked.",
+        "sourceIds": [
+          2
+        ]
+      }
+    ],
+    "blocker": "If new users suddenly cannot link, check whether the app passed 50 linked users without production approval. Only an approved application unfreezes it, so submit or complete the application instead of unlinking users. If members of one team cannot connect, ask that team's admin to add an Allow exception for your app key in the admin console's Integrations settings.",
+    "handoffs": {
+      "agent": [
+        "Map features to the minimum scopes and recommend App folder or Full Dropbox.",
+        "Draft the production application text, including how the app uses the API and any planned features that need broader access."
+      ],
+      "human": [
+        "Create the app, store the app key and secret, add development users, and test the real sign-in flow.",
+        "Submit the production application, track the 50-user deadline, and ask customer team admins to allow the app when needed."
+      ],
+      "provider": [
+        "Dropbox reviews the production application and approves it or denies it with feedback.",
+        "Customer team admins can block or allow the app for their team."
+      ]
+    },
+    "uncertainties": [
+      "Dropbox publishes no production review duration. The two-week window after 50 linked users is your deadline to apply and be approved, not a promised review time.",
+      "Dropbox's developer guide allows up to 500 development users but starts the two-week clock at 50. It says a more descriptive application may be approved faster, but gives no time for a standard or early review. The console was not opened to confirm how these limits display.",
+      "No app, token exchange, or production application was attempted. The admin console steps come from a help article updated Oct 22, 2025, and menu names may have changed."
+    ],
+    "sources": [
+      [
+        "DBX Platform developer guide",
+        "https://docs.dropboxapi.com/dropbox-api/docs/developer-resources/developer-guide",
+        "Official · production approval"
+      ],
+      [
+        "OAuth guide",
+        "https://docs.dropboxapi.com/dropbox-api/docs/oauth",
+        "Official · OAuth flow"
+      ],
+      [
+        "Developer Console tutorial",
+        "https://docs.dropboxapi.com/dropbox-api/docs/get-started/tutorial/app-console",
+        "Official · app setup"
+      ],
+      [
+        "Authorization reference",
+        "https://docs.dropboxapi.com/dropbox-api/docs/get-started/authorization",
+        "Official · tokens"
+      ],
+      [
+        "Business API overview",
+        "https://docs.dropboxapi.com/dropbox-api/api-reference/business-endpoints/overview",
+        "Official · team apps"
+      ],
+      [
+        "Manage apps for your Dropbox team",
+        "https://help.dropbox.com/integrations/app-integrations",
+        "Official · admin controls"
+      ]
+    ]
+  },
+  {
+    "id": "microsoft",
+    "name": "Microsoft",
+    "mark": "MS",
+    "kind": "microsoft",
+    "effort": "Tenant consent gates",
+    "band": "review",
+    "tagline": "Registration is self-service, but users in other organizations depend on publisher verification and their tenant's consent rules.",
+    "time": "1-2 days prep · planning estimate",
+    "wait": "Partner Center account verification: 3-5 business days in most cases, and some checks take longer. With prerequisites met, publisher verification can take minutes. No timing is published for customer admin consent.",
+    "waitSummary": "Partner check: 3-5 business days",
+    "effortLabel": "Medium · higher for multitenant apps",
+    "summary": "A Microsoft Entra app registration is self-service and starts in your own tenant. To reach users in other organizations you register a multitenant app, and each customer tenant's consent settings then decide whether its users can consent or an admin must. Publisher verification is the part you control: tenant consent policies can use it as a primary criterion.",
+    "caveat": "This path covers work or school sign-in to Microsoft Graph, not apps for personal Microsoft accounts only. Publisher verification confirms who publishes the app, not its quality, and is not supported in national clouds or Azure AD B2C tenants. A customer admin can still restrict or disable user consent for a verified app.",
+    "estimateBasis": "Our estimate covers registration, redirect and credential setup, adapting an existing OAuth backend for multitenant sign-in, and preparing Partner Center details. It excludes building your integration, Partner Center verification time, and waiting for customer administrators. It is not a Microsoft estimate.",
+    "checkedAt": "2026-11-05",
+    "evidenceStatus": "Official documentation reviewed. No app registration, publisher verification, or cross-tenant consent test attempted.",
+    "firstAction": "Decide single tenant or multitenant, then list each Microsoft Graph permission your features need as delegated or application.",
+    "steps": [
+      [
+        "Choose audience and access type",
+        "Pick Single tenant only for users in your own tenant, or Multiple Entra ID tenants for a SaaS app used by other organizations. Prefer delegated permissions, which act as the signed-in user; only an admin can consent to application permissions, which run without a user.",
+        "YOU + AGENT"
+      ],
+      [
+        "Register the app",
+        "In the Microsoft Entra admin center, as at least an Application Developer, open Entra ID → App registrations → New registration and record the Application (client) ID. Register in the tenant you will keep, using a work or school account: the app can't move between tenants, and apps registered with a Microsoft account can't be publisher verified.",
+        "YOU"
+      ],
+      [
+        "Set redirect URIs and credentials",
+        "Add each redirect URI under Authentication for the right platform. Avoid wildcards and http, keep the list small, and keep ownership of every domain. For a confidential client, use a managed identity or federated credential where possible, otherwise a certificate; Microsoft says not to use client secrets.",
+        "YOU + AGENT"
+      ],
+      [
+        "Request minimum Graph permissions",
+        "Map each feature to the least privileged Microsoft Graph permission and remove any you no longer need. Application permissions and many high-privilege delegated permissions need admin consent, so plan an admin consent path if you use them.",
+        "YOU + AGENT"
+      ],
+      [
+        "Verify the publisher",
+        "For multitenant apps, verify your Microsoft AI Cloud Partner Program partner global account in Partner Center, which checks email, identity, employment, and business details. Set a publisher domain on the app that isn't *.onmicrosoft.com; the email domain used for that verification must match it or be a DNS-verified custom domain in your tenant. Then someone with Application Administrator or Cloud Application Administrator in Entra and CPP Partner Admin or Account Admin in Partner Center, signed in with MFA, adds the Partner One ID to the app.",
+        "YOU + MICROSOFT"
+      ],
+      [
+        "Test consent in another tenant",
+        "Sign in from a second tenant with user consent restricted, including the verified publishers option under Enterprise apps → Consent and permissions → User consent settings. Where users can't consent, a customer admin must grant it; the admin consent workflow lets users request that review.",
+        "YOU + CUSTOMER ADMIN"
+      ]
+    ],
+    "sourceIdsByStep": [
+      [
+        1,
+        2,
+        6
+      ],
+      [
+        1,
+        3
+      ],
+      [
+        6
+      ],
+      [
+        2,
+        6
+      ],
+      [
+        3,
+        5
+      ],
+      [
+        2,
+        4
+      ]
+    ],
+    "gates": [
+      {
+        "who": "Provider review",
+        "level": "depends",
+        "status": "Publisher verification",
+        "note": "The pages reviewed describe no app review. Multitenant apps that need users in other tenants to consent should complete publisher verification through a verified Cloud Partner Program account; Microsoft doesn't charge for it.",
+        "sourceIds": [
+          3,
+          5
+        ]
+      },
+      {
+        "who": "Customer admin",
+        "level": "depends",
+        "status": "Depends on permissions",
+        "note": "Only an admin can consent to application permissions and many high-privilege delegated permissions, and a tenant can restrict or disable user consent. If risk-based step-up consent is enabled, users in other tenants can't consent to most unverified multitenant apps registered after November 8, 2020 that request permissions beyond basic sign-in and reading the user profile.",
+        "sourceIds": [
+          2,
+          3,
+          4
+        ]
+      },
+      {
+        "who": "User consent",
+        "level": "depends",
+        "status": "If tenant policy allows",
+        "note": "By default, users can consent to delegated permissions that don't need admin consent, unless their tenant restricts it. App-only access has no user consent step.",
+        "sourceIds": [
+          2,
+          4
+        ]
+      }
+    ],
+    "blocker": "If users in another tenant can't consent, their admin must grant consent or approve a request sent through the admin consent workflow. Send the admin the app name, publisher, and each Graph permission with its purpose. For an unverified multitenant app, finish publisher verification, and drop admin-only permissions that no feature needs.",
+    "handoffs": {
+      "agent": [
+        "Map each feature to the least privileged Graph permission and flag which ones need admin consent.",
+        "Draft multitenant sign-in, token validation, and admin consent request tasks for developer review."
+      ],
+      "human": [
+        "Register the app, own the publisher domain and Partner Center account, and manage credentials.",
+        "Run consent tests in a second tenant and ask customer admins for consent when needed."
+      ],
+      "provider": [
+        "Microsoft verifies your Cloud Partner Program account before publisher verification.",
+        "Customer tenant admins set user consent rules and grant admin consent."
+      ]
+    },
+    "uncertainties": [
+      "Partner Center says verification takes 3-5 business days in most cases, but some checks take longer and the Verification Summary may show its own ETA. Customer admin turnaround is not published.",
+      "Which Microsoft Graph permissions need admin consent was not checked permission by permission; confirm each one in Microsoft's Graph permissions reference.",
+      "No registration, verification, or cross-tenant consent test was attempted. The docs show different admin center paths (Entra ID → App registrations, Identity → Applications → Enterprise apps), and Microsoft's publisher verification pages name the Partner Center roles differently, so confirm menu and role labels in the portal."
+    ],
+    "sources": [
+      [
+        "Register an app",
+        "https://learn.microsoft.com/en-us/entra/identity-platform/quickstart-register-app",
+        "Official · registration"
+      ],
+      [
+        "Permissions and consent",
+        "https://learn.microsoft.com/en-us/entra/identity-platform/permissions-consent-overview",
+        "Official · permission types"
+      ],
+      [
+        "Publisher verification",
+        "https://learn.microsoft.com/en-us/entra/identity-platform/publisher-verification-overview",
+        "Official · publisher verification"
+      ],
+      [
+        "Tenant user consent settings",
+        "https://learn.microsoft.com/en-us/entra/identity/enterprise-apps/configure-user-consent",
+        "Official · admin controls"
+      ],
+      [
+        "Partner Center account verification",
+        "https://learn.microsoft.com/en-us/partner-center/enroll/understand-the-verification-process",
+        "Official · verification timing"
+      ],
+      [
+        "App registration security practices",
+        "https://learn.microsoft.com/en-us/entra/identity-platform/security-best-practices-for-app-registration",
+        "Official · credentials and redirects"
+      ]
+    ]
+  },
+  {
+    "id": "spotify",
+    "name": "Spotify",
+    "mark": "SP",
+    "kind": "spotify",
+    "effort": "Partner approval",
+    "band": "review",
+    "tagline": "Up to 5 allowlisted users is self-service; reaching more needs Spotify to accept your organization as a partner and review your app.",
+    "time": "2-4 hours · planning estimate",
+    "wait": "The pages reviewed publish no timing for the Partner Application, and the Developer Policy makes no promise on processing times for extended access. After partner approval, the app review can take up to six weeks.",
+    "waitSummary": "Partner gate, then up to 6 weeks",
+    "effortLabel": "Low for testers · gated for public use",
+    "summary": "New Spotify apps start in development mode: up to 5 allowlisted users, and the app owner needs Premium. The hardest gate is extended quota mode, the only route to more users: since May 15, 2025 Spotify accepts only organizations that meet criteria including at least 250k monthly active users, and after the partner form is approved the app review can take up to six weeks. Spotify says development mode should not be relied on as a foundation for building or scaling a business.",
+    "caveat": "This path covers Web API apps, not the Ads API, Commercial Hardware, or SDK-specific setup. New development mode apps can call only a smaller set of endpoints. Extended quota access still goes through a Developer Policy compliance review, and the Developer Policy applies to all use of the platform, so its prohibited uses, such as training AI models on Spotify Content, still apply after approval.",
+    "estimateBasis": "Our estimate covers registering a development mode app, adapting an existing OAuth backend to authorization code with PKCE, allowlisting testers, and a first account test. It excludes building your product, the Partner Application, the quota extension questionnaire, and Spotify's review time. It is not a Spotify estimate.",
+    "checkedAt": "2026-11-05",
+    "evidenceStatus": "Official documentation reviewed. No developer app, allowlist entry, or quota extension request attempted.",
+    "firstAction": "Decide whether 5 allowlisted users is enough. If not, check the extended quota criteria before building.",
+    "steps": [
+      [
+        "Check extended quota eligibility first",
+        "If you need more than 5 users, confirm your organization meets every criterion: an established legal business entity, an active launched service, at least 250k monthly active users, availability in key Spotify markets, commercial viability, and adherence to terms. Since May 15, 2025 Spotify accepts applications only from organizations, not individuals.",
+        "YOU"
+      ],
+      [
+        "Check the use case against the Developer Policy",
+        "The Developer Policy applies to all use of the platform. Among other things, it bans using Spotify Content to train an AI model or otherwise ingesting it into one, voice-enabled apps that control Spotify, games including trivia quizzes, products targeted at businesses, and analysing Spotify Content to create derived listenership metrics or benchmarks. Streaming apps also cannot be sold, carry ads, or take in-app payments.",
+        "YOU + AGENT"
+      ],
+      [
+        "Register a development mode app",
+        "In the Dashboard, click Create an App, enter the name and description users will see on the grant screen, and accept the Developer Terms. The app owner needs Spotify Premium for a development mode app to work, and new development mode apps can call only a smaller set of endpoints.",
+        "YOU"
+      ],
+      [
+        "Set exact redirect URIs",
+        "Add each URI under Edit Settings. Use HTTPS except for loopback IP literals such as http://127.0.0.1:PORT or http://[::1]:PORT; localhost is not allowed, Spotify says never to use wildcard URIs, and only loopback URIs can leave out the port for dynamic assignment.",
+        "YOU + AGENT"
+      ],
+      [
+        "Implement authorization code with PKCE",
+        "Use PKCE for user data; the plain authorization code flow is also acceptable with a secure backend, and the implicit grant is deprecated. Keep the client secret out of client-side code, request only the scopes you need, and send users through authorization again when a refresh token expires.",
+        "YOU + AGENT"
+      ],
+      [
+        "Allowlist testers, then request extended quota",
+        "Add each tester under Settings → Users Management with their name and Spotify email. Users not on the list may still be able to sign in, but their API requests get 403 errors. If your organization qualifies, send the partner form from a company email, then after approval complete the 4-step questionnaire in the Quota extension Request tab.",
+        "YOU + SPOTIFY"
+      ]
+    ],
+    "sourceIdsByStep": [
+      [
+        1
+      ],
+      [
+        6,
+        5
+      ],
+      [
+        3,
+        1,
+        2
+      ],
+      [
+        3,
+        4,
+        5
+      ],
+      [
+        5
+      ],
+      [
+        1
+      ]
+    ],
+    "gates": [
+      {
+        "who": "Provider review",
+        "level": "required",
+        "status": "For more than 5 users",
+        "note": "More users need extended quota mode: Spotify must approve your organization's Partner Application, then review the app for Developer Policy compliance.",
+        "sourceIds": [
+          1
+        ]
+      },
+      {
+        "who": "Customer admin",
+        "level": "none",
+        "status": "None in docs reviewed",
+        "note": "The pages reviewed describe no organization admin approval for Spotify users. In development mode, you as the app owner allowlist each user yourself.",
+        "sourceIds": [
+          1
+        ]
+      },
+      {
+        "who": "User consent",
+        "level": "always",
+        "status": "Every user",
+        "note": "Each user signs in and approves your app on Spotify's grant screen, which shows your app name and description. Users must authorize again when a refresh token expires.",
+        "sourceIds": [
+          3,
+          5
+        ]
+      }
+    ],
+    "blocker": "If your organization cannot meet the extended quota criteria, plan for at most 5 allowlisted users per app. An account can hold up to 25 apps, but the Developer Policy allows only one Client ID per app, so do not split one product across several Client IDs to get around the cap. If an allowlisted user's API requests still get 403 errors, check the Spotify email entered in Users Management and the scopes you requested.",
+    "handoffs": {
+      "agent": [
+        "Check planned features against the Developer Policy's prohibited list and flag AI ingestion and derived-metrics risks.",
+        "Generate PKCE, loopback redirect, refresh-expiry, and 403 and 429 handling tasks for developer review."
+      ],
+      "human": [
+        "Own the Premium developer account, register the app, and allowlist up to 5 testers.",
+        "Decide whether your organization meets the extended quota criteria and send the partner form from a company email."
+      ],
+      "provider": [
+        "Spotify approves the Partner Application, then its app review team decides on the move to extended quota mode."
+      ]
+    },
+    "uncertainties": [
+      "The criteria say at least 250k MAUs but do not say whether that counts your whole service or only Spotify-connected users, and they do not define key Spotify markets. Ask Spotify before applying.",
+      "The Developer Policy bans ingesting Spotify Content into a machine learning or AI model. The pages reviewed do not say whether passing API results into an LLM prompt at runtime counts; get written guidance before building an agent that does this.",
+      "No timing is published for the Partner Application itself; the six-week figure covers the later app review. The docs do not say whether the 5-user cap includes the app owner. No app or request was attempted."
+    ],
+    "sources": [
+      [
+        "Quota modes",
+        "https://developer.spotify.com/documentation/web-api/concepts/quota-modes",
+        "Official · limits and review"
+      ],
+      [
+        "Developer access update, February 2026",
+        "https://developer.spotify.com/blog/2026-02-06-update-on-developer-access-and-platform-security",
+        "Official · development mode"
+      ],
+      [
+        "Apps",
+        "https://developer.spotify.com/documentation/web-api/concepts/apps",
+        "Official · registration"
+      ],
+      [
+        "Redirect URIs",
+        "https://developer.spotify.com/documentation/web-api/concepts/redirect_uri",
+        "Official · redirect rules"
+      ],
+      [
+        "Building with AI",
+        "https://developer.spotify.com/documentation/web-api/tutorials/building-with-ai",
+        "Official · OAuth and AI guidance"
+      ],
+      [
+        "Developer Policy",
+        "https://developer.spotify.com/policy",
+        "Official · prohibited uses"
+      ]
     ]
   }
 ]

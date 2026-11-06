@@ -3,9 +3,24 @@ import { readFile } from 'node:fs/promises';
 import { lookup } from 'node:dns/promises';
 import { research, ResearchError } from './research.mjs';
 import { FONTS } from './fonts.mjs';
+import { RENDER_USER_AGENT, allowSubrequest, extractPage } from './render.mjs';
 
 // Check every A and AAAA answer from the same resolver Node's fetch uses.
 const resolveHost = async (host) => (await lookup(host, { all: true, verbatim: true })).map((row) => row.address);
+
+// Local stand-in for Cloudflare Browser Rendering: Playwright (a dev dependency) renders JavaScript-only docs.
+let browserPromise;
+async function renderPage(url) {
+  const { chromium } = await import('playwright');
+  browserPromise ||= chromium.launch();
+  const context = await (await browserPromise).newContext({ userAgent: RENDER_USER_AGENT });
+  try {
+    const page = await context.newPage();
+    await page.route('**/*', (route) => (allowSubrequest(route.request().url(), route.request().resourceType()) ? route.continue() : route.abort()));
+    await page.goto(url, { waitUntil: 'networkidle', timeout: 15000 });
+    return await page.evaluate(extractPage);
+  } finally { await context.close(); }
+}
 
 const root = new URL('./', import.meta.url);
 const port = Number(process.env.PORT || 4173);
@@ -49,7 +64,7 @@ const server = http.createServer(async (req, res) => {
       }
       let input;
       try { input = JSON.parse(body); } catch { throw new ResearchError('Enter a valid app name or website.', 400); }
-      respond(res, 200, await research(input, {}, { resolveHost }));
+      respond(res, 200, await research(input, {}, { resolveHost, renderPage }));
     } catch (error) { respond(res, error.status || 502, { error: error instanceof ResearchError ? error.message : 'Research could not finish. Please try again.' }); }
     return;
   }

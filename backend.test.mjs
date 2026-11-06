@@ -94,7 +94,7 @@ test('Worker does not serve source code or secrets and enforces API method and o
   assert.equal((await worker.fetch(new Request('https://app.test/api/research', { method: 'POST', headers: { 'content-type': 'application/json', origin: 'https://evil.test' }, body: '{}' }), env)).status, 403);
   assert.equal((await worker.fetch(new Request('https://app.test/api/research', { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{' }), env)).status, 400);
   const health = await (await worker.fetch(new Request('https://app.test/api/health'), env)).json();
-  assert.deepEqual(health, { ok: true, research: 'public-documentation', ai: false });
+  assert.deepEqual(health, { ok: true, research: 'public-documentation', ai: false, browser: false });
 });
 
 test('user consent cannot be upgraded to unsupported provider or admin approval gates', async () => {
@@ -254,4 +254,26 @@ test('Worker rejects oversized bodies before reading them', async () => {
   const env = { ASSETS: { fetch: async () => new Response('asset') } };
   const response = await worker.fetch(new Request('https://app.test/api/research', { method: 'POST', headers: { 'content-type': 'application/json', 'content-length': '999999' }, body: '{}' }), env);
   assert.equal(response.status, 413);
+});
+
+test('JavaScript-only docs are rendered in a headless browser, capped, and never for private targets', async () => {
+  const shell = () => new Response('<html><head><title>Docs</title></head><body><div id="root"></div><script>app()</script></body></html>', { headers: { 'content-type': 'text/html' } });
+  const options = fixture({ 'https://jsdocs.example.com/': home.replace('/docs/oauth', '/docs/oauth-app'), 'https://jsdocs.example.com/docs/oauth-app': shell });
+  const rendered = [];
+  options.renderPage = async (url) => {
+    rendered.push(url);
+    return { url, title: 'Create an OAuth app', text: `Create an OAuth app in the developer console. Register a redirect URI and copy the client ID. Exchange the authorization code for an access token and a refresh token. Request only the scopes you need. ${'Details. '.repeat(20)}`, links: [{ url: 'http://127.0.0.1/admin', title: 'internal' }, { url: '/docs/scopes', title: 'OAuth scopes' }] };
+  };
+  const result = await research({ url: 'https://jsdocs.example.com' }, {}, options);
+  assert.deepEqual(rendered, ['https://jsdocs.example.com/docs/oauth-app']);
+  const source = result.sources.find((s) => s.url.endsWith('/docs/oauth-app'));
+  assert.match(source.kind, /rendered in a headless browser/);
+  assert.equal(result.oauthSupport, 'documented');
+  assert.ok(result.activity.some((row) => /Rendered 1 JavaScript-only page/.test(row.label)));
+  assert.ok(!options.calls.some((url) => url.includes('127.0.0.1')));
+
+  const escaped = fixture({ 'https://jsdocs.example.com/': home.replace('/docs/oauth', '/docs/oauth-app'), 'https://jsdocs.example.com/docs/oauth-app': shell });
+  escaped.renderPage = async () => ({ url: 'http://169.254.169.254/latest', title: 'meta', text: 'x'.repeat(500), links: [] });
+  const blocked = await research({ url: 'https://jsdocs.example.com' }, {}, escaped);
+  assert.ok(!blocked.sources.some((s) => s.url.includes('169.254')), 'a render that lands on a private address is discarded');
 });

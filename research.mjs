@@ -498,6 +498,27 @@ export async function research(input, env = {}, options = {}) {
   const startedAt = Date.now();
   const tools = createFetcher(options);
   const { readPage } = tools;
+  // JavaScript-only documentation: when a page has no server-rendered text, render it in a headless browser if the
+  // host provides one (Cloudflare Browser Rendering in the Worker, Playwright locally). Capped per request.
+  let renders = 0, rendered = 0;
+  const readOrRender = async (target) => {
+    try { return await readPage(target); }
+    catch (error) {
+      if (!options.renderPage || renders >= 2 || !/interactive browser/.test(error.message)) throw error;
+      renders += 1;
+      const requested = publicUrl(target);
+      const raw = await options.renderPage(requested.href);
+      const finalUrl = publicUrl(raw?.url || requested.href);
+      const content = text(raw?.text, MAX_TEXT * 2).replace(/[ \t]+/g, ' ').replace(/\n\s*\n/g, '\n').slice(0, MAX_TEXT);
+      if (content.length < 200 || /just a moment|verify you are human|checking your browser|access denied/i.test(raw?.title || '')) throw new Error('Rendered page had no readable documentation');
+      const links = [], seenLinks = new Set();
+      for (const link of Array.isArray(raw?.links) ? raw.links.slice(0, 400) : []) {
+        try { const href = publicUrl(new URL(link.url, finalUrl).href).href; if (!seenLinks.has(href)) { seenLinks.add(href); links.push({ url: href, title: text(link.title, 150), className: '' }); } } catch { /* skip unusable links */ }
+      }
+      rendered += 1;
+      return { url: finalUrl.href, title: text(raw?.title, 160) || finalUrl.hostname, content, links, hosts: [requested.hostname, finalUrl.hostname], kind: 'html', rendered: true };
+    }
+  };
   const activity = [];
   const identity = IDENTITIES.get(norm(name));
   let searchSucceeded = false;
@@ -551,7 +572,7 @@ export async function research(input, env = {}, options = {}) {
   ])].filter((url) => !seeds.includes(url));
   const firstRound = [...seeds, ...probes];
   firstRound.forEach((url) => attempted.add(url));
-  const firstResults = await Promise.allSettled(firstRound.map((url) => readPage(url)));
+  const firstResults = await Promise.allSettled(firstRound.map((url, index) => (index < seeds.length ? readOrRender : readPage)(url)));
   const portals = [];
   firstResults.forEach((result, index) => {
     const url = firstRound[index];
@@ -572,7 +593,7 @@ export async function research(input, env = {}, options = {}) {
     // Drop queued variants of pages in this batch so the crawl budget reaches different pages.
     for (const url of [...frontier.keys()]) if (batch.some((taken) => canonical(taken) === canonical(url))) frontier.delete(url);
     crawled += batch.length;
-    const results = await Promise.allSettled(batch.map((url) => readPage(url)));
+    const results = await Promise.allSettled(batch.map((url) => readOrRender(url)));
     results.forEach((result, index) => {
       if (result.status === 'fulfilled') accept(result.value, 'linked');
       else failures.push({ url: batch[index], reason: 'Page unavailable, restricted, or not readable by the crawler.' });
@@ -587,6 +608,7 @@ export async function research(input, env = {}, options = {}) {
     }
   }
   const oauthPages = pages.filter((page) => oauthStrength(page.content) >= 2).sort((a, b) => oauthStrength(b.content) - oauthStrength(a.content));
+  if (rendered) activity.push({ label: `Rendered ${rendered} JavaScript-only page${rendered === 1 ? '' : 's'} in a headless browser to read the docs`, status: 'complete' });
   activity.push({ label: `Read ${pages.length} public provider page${pages.length === 1 ? '' : 's'}; ${oauthPages.length} contain${oauthPages.length === 1 ? 's' : ''} concrete OAuth setup details`, status: pages.length ? 'complete' : 'incomplete' });
   if (skipped || signIn) activity.push({ label: `Set aside ${skipped + signIn === 1 ? '1 page that was' : `${skipped + signIn} pages that were`} not developer documentation${signIn ? ` (${signIn} sign-in wall${signIn === 1 ? '' : 's'})` : ''}`, status: 'complete' });
 
@@ -608,7 +630,7 @@ export async function research(input, env = {}, options = {}) {
     id: `research-${crypto.randomUUID()}`, name, title: pages[0]?.title || name, domain: site.hostname, url: site.href, researchedAt, mode,
     ...guide,
     homepageRead: pages.some((page) => family(new URL(page.url).hostname) === fam), searchSucceeded,
-    sources: pages.map((page) => ({ id: page.id, title: page.title, url: page.url, kind: oauthStrength(page.content) >= 2 ? 'OAuth documentation · read during this request' : 'Provider page · read during this request', checkedAt: researchedAt, excerpt: usefulText(page.content).split(/\s+/).slice(0, 20).join(' ') })),
+    sources: pages.map((page) => ({ id: page.id, title: page.title, url: page.url, kind: `${oauthStrength(page.content) >= 2 ? 'OAuth documentation' : 'Provider page'} · ${page.rendered ? 'rendered in a headless browser' : 'read during this request'}`, checkedAt: researchedAt, excerpt: usefulText(page.content).split(/\s+/).slice(0, 20).join(' ') })),
     activity,
   };
 }

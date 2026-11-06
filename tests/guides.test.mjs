@@ -31,3 +31,10 @@ test('Slack guide distinguishes commercial review and non-guaranteed feedback wi
  assert.match(slack.wait,/10 business days/);assert.match(slack.wait,/10 weeks/);
  assert.match(slack.summary,/commercial/i);assert.ok(slack.uncertainties.length>0);
 });
+test('new guides keep their verified headline facts', () => {
+ const byId = Object.fromEntries(guides.map((g) => [g.id, g]));
+ assert.match(byId.dropbox.summary, /50 users/); assert.match(byId.dropbox.summary, /two weeks/);
+ assert.match(byId.spotify.summary, /5 allowlisted users/); assert.match(byId.spotify.summary, /250k monthly active users/);
+ assert.match(byId.microsoft.wait, /3-5 business days/);
+ for (const g of guides) assert.doesNotMatch(JSON.stringify(g), /[–—]/, `${g.id} has an en or em dash`);
+});

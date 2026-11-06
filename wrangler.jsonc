@@ -3,6 +3,8 @@
   "name": "oauth-path",
   "main": "worker.mjs",
   "compatibility_date": "2026-11-04",
+  // @cloudflare/puppeteer (Browser Rendering for JavaScript-only docs) needs Node.js compatibility.
+  "compatibility_flags": ["nodejs_compat"],
   "workers_dev": true,
   "assets": {
     "directory": "./.output/public",
@@ -11,5 +13,6 @@
     "not_found_handling": "none"
   },
   "ai": { "binding": "AI" },
+  "browser": { "binding": "BROWSER" },
   "observability": { "enabled": true }
 }

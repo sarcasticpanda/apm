@@ -23,7 +23,7 @@ for (const [label, engine] of [['chromium', chromium], ['firefox', firefox], ['w
     page.on('pageerror', (error) => errors.push(error.message));
     await page.goto(base, { waitUntil: 'networkidle' });
     await page.locator('.app-card').first().waitFor();
-    assert.equal(await page.locator('.app-card').count(), 3);
+    assert.equal(await page.locator('.app-card').count(), 6);
     passed.push('library');
 
     await page.locator('[data-guide="slack"]').click();

@@ -8,3 +8,6 @@ vendor/
 .dev.vars
 artifacts/
 *.log
+
+# Take-home brief: kept local, never published
+assignment.md

@@ -54,6 +54,22 @@ One finding was refuted on re-check: Google step 3 correctly cites the brand-ver
 
 The new **"Who has to say yes"** panels were checked against their cited sources. GitHub's organization owner approval is in [organization restrictions](https://docs.github.com/en/organizations/managing-oauth-access-to-your-organizations-data/about-oauth-app-access-restrictions). Slack's admin approval is under "Enabling admin approval" on [distribution](https://docs.slack.dev/app-management/distribution/). Google's Workspace admin controls are in the [app-state overview](https://developers.google.com/identity/protocols/oauth2/production-readiness/overview). User consent for each provider is in its OAuth flow page.
 
+## Third review: three new guides (5 November 2026)
+
+Dropbox, Microsoft, and Spotify were added because each has a different hardest gate. Each guide went through four checks:
+1. A research agent drafted it from official pages only, with a quoted sentence for every concrete claim.
+2. A separate fact-checking agent re-fetched every source and tried to refute each claim.
+3. A third agent fixed what survived.
+4. The headline numbers were re-checked by hand against the live pages.
+
+| Guide | Claims checked | Problems found and fixed | Headline facts re-checked by hand |
+| --- | --- | --- | --- |
+| Dropbox | about 47 | 1 flagged, kept after the fixer quoted the OAuth guide's refresh-token table | "up to 500 total Dropbox users… once your app links 50 Dropbox users, you will have two weeks to apply for and receive production status approval" ([developer guide](https://docs.dropboxapi.com/dropbox-api/docs/developer-resources/developer-guide)) |
+| Microsoft | 46 | 2 overstatements softened: when step-up consent blocks unverified apps, and the Partner Center role names | "In most cases, the process takes three to five business days"; publisher verification "in minutes" once prerequisites are met ([Partner Center](https://learn.microsoft.com/en-us/partner-center/enroll/understand-the-verification-process), [publisher verification](https://learn.microsoft.com/en-us/entra/identity-platform/publisher-verification-overview)) |
+| Spotify | 55 | 3 corrected: Developer Policy scope, 403 wording, and an unsupported Client ID rule | "Up to 5 authenticated Spotify users… as of May 15th 2025, Spotify only accepts applications from organizations… at least 250k MAUs… This review process can take up to six weeks" ([quota modes](https://developer.spotify.com/documentation/web-api/concepts/quota-modes)) |
+
+Open questions stay in each guide's uncertainties. For example: Dropbox publishes no review duration; Spotify's 250k MAU counting method and the Partner Application form's timing are not documented; Microsoft's Partner Center role names differ between two pages.
+
 ### What live research trials taught us
 
 - **Dropbox produced a fabricated guide.** A run starting from `dropbox.com` returned a summary about a "SpaceXAI Cursor Marketplace plugin". Root cause: Dropbox's real OAuth guide redirects to another domain (`docs.dropboxapi.com`), and the crawler discarded it as unofficial. It then read marketing pages that mention "OAuth consent". Fixes: a redirect that starts on an official host is now trusted. Only pages with at least two concrete OAuth signals (client ID, redirect URI, authorization code, tokens, scopes, PKCE) reach the model. Marketing and sign-in paths are ranked out. A regression test covers each fix.
