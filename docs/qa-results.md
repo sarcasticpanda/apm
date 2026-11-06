@@ -46,7 +46,7 @@ Run against the deployed Worker after the fixes, with name or URL input only:
 
 | Input | Result | Time |
 | --- | --- | --- |
-| `Calendly` | AI draft, 4 OAuth pages (PKCE, scopes, token refresh); resolved via Wikidata | 26 s |
+| `Calendly` | AI draft, 6 pages read, 4 with OAuth details (PKCE, scopes, token refresh); resolved via Wikidata. Re-run on 7 Nov through the live form with Playwright: same result | 26 s; 22.5 s on 7 Nov |
 | `https://www.dropbox.com` | AI draft from `docs.dropboxapi.com` OAuth guide; review mentioned, no timeline claimed | 26 s |
 | `Zendesk` | AI draft, 3 OAuth pages from `developer.zendesk.com` | 19 s |
 | `Strava` | AI draft, 4 OAuth pages; sign-in wall excluded | 33 s |
