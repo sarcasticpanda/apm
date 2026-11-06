@@ -2,6 +2,7 @@ import http from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { lookup } from 'node:dns/promises';
 import { research, ResearchError } from './research.mjs';
+import { FONTS } from './fonts.mjs';
 
 // Check every A and AAAA answer from the same resolver Node's fetch uses.
 const resolveHost = async (host) => (await lookup(host, { all: true, verbatim: true })).map((row) => row.address);
@@ -15,8 +16,8 @@ const files = new Map([
   ['/app.js', ['app.js', 'text/javascript; charset=utf-8']],
   ['/favicon.svg', ['favicon.svg', 'image/svg+xml']],
   ['/guides.json', ['guides.json', 'application/json; charset=utf-8']],
-  ['/vendor/gsap.min.js', ['node_modules/gsap/dist/gsap.min.js', 'text/javascript; charset=utf-8']],
-  ['/vendor/ScrollTrigger.min.js', ['node_modules/gsap/dist/ScrollTrigger.min.js', 'text/javascript; charset=utf-8']],
+  ['/icons.js', ['icons.js', 'text/javascript; charset=utf-8']],
+  ...Object.entries(FONTS).map(([file, source]) => [`/fonts/${file}`, [source, 'font/woff2']]),
 ]);
 const limits = new Map();
 

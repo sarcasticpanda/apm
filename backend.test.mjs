@@ -209,6 +209,47 @@ test('a name resolves through Wikidata and an llms.txt index leads to the OAuth 
   assert.equal(result.oauthSupport, 'documented');
 });
 
+test('very short names never resolve to an arbitrary search hit', async () => {
+  const options = fixture({});
+  const base = options.fetcher;
+  options.fetcher = async (url, init) => url.startsWith('https://html.duckduckgo.com/') ? html('<a class="result__a" href="https://www.unrelated-site.com/oauth-guide">OAuth guide</a>') : base(url, init);
+  for (const name of ['C++', '+++']) await assert.rejects(research({ name }, {}, options), (error) => error.status === 422, name);
+});
+
+test('Wikidata matches need a company or product description', async () => {
+  const options = fixture({ 'https://garysmithfans.com/': '<h1>Fans</h1><p>A long enough page about a football player and his career highlights.</p>' });
+  const base = options.fetcher;
+  options.fetcher = async (url, init) => {
+    if (url.includes('wbsearchentities')) return Response.json({ search: [{ id: 'Q9' }] });
+    if (url.includes('wbgetentities')) return Response.json({ entities: { Q9: { labels: { en: { value: 'Gary Smith' } }, descriptions: { en: { value: 'American footballer' } }, claims: { P856: [{ rank: 'normal', mainsnak: { datavalue: { value: 'https://garysmithfans.com/' } } }] } } } });
+    return base(url, init);
+  };
+  await assert.rejects(research({ name: 'Gary Smith' }, {}, options), (error) => error.status === 422);
+});
+
+test('both ends of a duration range, and durations in steps, must appear in cited pages', async () => {
+  const page = docs + '<p>Submit your app for app review. Review usually takes 2 days.</p>';
+  const run = (value) => research({ url: 'https://app.example.com' }, { AI: { run: async () => ({ response: value }) } }, fixture({ 'https://app.example.com/': home, 'https://app.example.com/docs/oauth': page }));
+  const base = [1, 2, 3].map((n) => ({ title: `Step ${n}`, description: 'Configure the app.', owner: 'You', sourceIds: ['S2'] }));
+  const range = await run({ steps: base, approvalWait: 'Review takes 2-14 days (S2)' });
+  assert.match(range.approvalWait, /no waiting time was established/);
+  const exact = await run({ steps: base, approvalWait: 'Review usually takes 2 days (S2)' });
+  assert.equal(exact.approvalWait, 'Review usually takes 2 days (S2)');
+  const timed = await run({ steps: [...base, { title: 'Wait for access', description: 'Register the redirect URI. Access is granted within 3 weeks.', owner: 'You', sourceIds: ['S2'] }], requirements: [{ text: 'Tokens are approved within 9 days.', sourceIds: ['S2'] }] });
+  assert.equal(timed.steps[3].description, 'Register the redirect URI.');
+  assert.equal(timed.requirements.length, 0);
+});
+
+test('reserved IPv6 ranges and pathological markup are handled', () => {
+  for (const address of ['fec0::1', '2001:10::1', '2001:20::1', '3fff::1']) assert.equal(isPublicAddress(address), false, address);
+  const started = Date.now();
+  cleanText('<'.repeat(700000));
+  extractLinks(`<a class="${'x'.repeat(1990)}">`.repeat(350), 'https://app.example.com');
+  assert.ok(Date.now() - started < 1500, `took ${Date.now() - started}ms`);
+  assert.equal(cleanText('<p>a < b and <b>c</b></p>'), 'a c');
+  assert.equal(extractLinks('<a class=nav href=/docs/oauth>OAuth</a>', 'https://app.example.com')[0].url, 'https://app.example.com/docs/oauth');
+});
+
 test('Worker rejects oversized bodies before reading them', async () => {
   const env = { ASSETS: { fetch: async () => new Response('asset') } };
   const response = await worker.fetch(new Request('https://app.test/api/research', { method: 'POST', headers: { 'content-type': 'application/json', 'content-length': '999999' }, body: '{}' }), env);

@@ -1,4 +1,8 @@
 import { research, ResearchError } from './research.mjs';
+import { FONTS } from './fonts.mjs';
+
+// Explicit allow-list: only built browser assets are served, never source or configuration.
+const PUBLIC_PATHS = new Set(['/', '/index.html', '/styles.css', '/app.js', '/icons.js', '/favicon.svg', '/guides.json', ...Object.keys(FONTS).map((file) => `/fonts/${file}`)]);
 
 const limits = new Map();
 const headers = { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store', 'x-content-type-options': 'nosniff', 'referrer-policy': 'strict-origin-when-cross-origin' };
@@ -34,7 +38,7 @@ export default {
     }
     if (url.pathname.startsWith('/api/')) return json({ error: 'API route not found.' }, 404);
     if (!['GET', 'HEAD'].includes(request.method)) return json({ error: 'Method not allowed.' }, 405);
-    if (!['/', '/index.html', '/styles.css', '/app.js', '/favicon.svg', '/guides.json', '/vendor/gsap.min.js', '/vendor/ScrollTrigger.min.js'].includes(url.pathname)) {
+    if (!PUBLIC_PATHS.has(url.pathname)) {
       return new Response('Page not found. Return to / to open the guide library.', { status: 404, headers: { 'content-type': 'text/plain; charset=utf-8' } });
     }
     const response = await env.ASSETS.fetch(request);

@@ -50,7 +50,7 @@ const SIGN_IN_PATH = /\/(?:log-?in|sign-?in|sign-?up|auth\/login|accounts?\/logi
 const GOOD_ENTITY = /software|company|service|platform|application|\bapp\b|website|saas|cloud|online|messaging|payment|accounting|crm|social|search engine|collaboration|project management|developer|\bapi\b|tool|marketplace|commerce|streaming|e-?mail|calendar|chat|storage|startup|business|scheduling|productivity|video|design/i;
 const BAD_ENTITY = /village|town|city|river|mountain|lake|island|family name|given name|surname|film|album|song|single|band|novel|book|character|genus|species|disease|syndrome|scientific article|article|human|painting|episode|television|journal|municipality|commune|disambiguation|sport/i;
 const CORPORATE_SUFFIX = /\s+(?:inc|ltd|limited|llc|corp|corporation|co|gmbh|plc|sa|ag|technologies|software|labs|hq|group|holdings)\.?$/i;
-const DURATION = /\b(\d+)(?:\s*(?:-|–|to)\s*\d+)?\s*(?:business\s+|working\s+|calendar\s+)?(minute|hour|day|week|month)s?\b/gi;
+const DURATION = /\b(\d+)(?:\s*(?:-|–|to)\s*(\d+))?\s*(?:business\s+|working\s+|calendar\s+)?(minute|hour|day|week|month)s?\b/gi;
 const text = (value, limit = 1000) => typeof value === 'string' ? value.replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g, '').trim().slice(0, limit) : '';
 const norm = (value) => String(value || '').toLowerCase().replace(/[^a-z0-9]/g, '');
 const asciiLower = (value) => value.replace(/[A-Z]/g, (c) => c.toLowerCase()); // preserves string indices
@@ -93,7 +93,9 @@ export function isPublicAddress(address) {
     if (g.slice(0, 6).every((part) => part === 0)) return false; // ::, ::1, IPv4-compatible
     if (g.slice(0, 5).every((part) => part === 0) && g[5] === 0xffff) return false; // IPv4-mapped
     if ((g[0] === 0x64 && g[1] === 0xff9b) || g[0] === 0x2002 || (g[0] === 0x2001 && (g[1] === 0 || g[1] === 0xdb8))) return false; // NAT64, 6to4, Teredo, documentation
-    if ((g[0] & 0xfe00) === 0xfc00 || (g[0] & 0xffc0) === 0xfe80 || (g[0] & 0xff00) === 0xff00 || (g[0] === 0x100 && g[1] === 0 && g[2] === 0 && g[3] === 0)) return false; // ULA, link-local, multicast, discard
+    if (g[0] === 0x2001 && ((g[1] & 0xfff0) === 0x10 || (g[1] & 0xfff0) === 0x20)) return false; // ORCHID
+    if (g[0] === 0x3fff && g[1] < 0x1000) return false; // documentation range 3fff::/20
+    if ((g[0] & 0xfe00) === 0xfc00 || (g[0] & 0xffc0) === 0xfe80 || (g[0] & 0xffc0) === 0xfec0 || (g[0] & 0xff00) === 0xff00 || (g[0] === 0x100 && g[1] === 0 && g[2] === 0 && g[3] === 0)) return false; // ULA, link-local, multicast, discard
     return true;
   }
   const numbers = ip.split('.').map(Number);
@@ -124,8 +126,24 @@ function stripBlocks(html) {
   return output + html.slice(index);
 }
 
+// Replaces tags with spaces in one pass. The next '>' position is cached, so a page full of unclosed '<'
+// is scanned once; a '<' with no '>' within 2000 characters stays as text.
+function stripTags(html) {
+  let output = '', index = 0, nextClose = -1;
+  while (index < html.length) {
+    const open = html.indexOf('<', index);
+    if (open === -1) { output += html.slice(index); break; }
+    if (nextClose < open) nextClose = html.indexOf('>', open);
+    if (nextClose === -1) { output += html.slice(index); break; }
+    if (nextClose - open > 2000) { output += html.slice(index, open + 1); index = open + 1; continue; }
+    output += `${html.slice(index, open)} `;
+    index = nextClose + 1;
+  }
+  return output;
+}
+
 export function cleanText(html) {
-  return decodeEntities(stripBlocks(String(html)).replace(/<(br|\/p|\/li|\/div|\/h[1-6]|\/tr)\b[^>]{0,200}>/gi, '\n').replace(/<[^>]{0,2000}>/g, ' ')).replace(/[ \t]+/g, ' ').replace(/\n\s*\n/g, '\n').trim();
+  return decodeEntities(stripTags(stripBlocks(String(html)).replace(/<(br|\/p|\/li|\/div|\/h[1-6]|\/tr)\b[^>]{0,200}>/gi, '\n'))).replace(/[ \t]+/g, ' ').replace(/\n\s*\n/g, '\n').trim();
 }
 
 function region(html, lower, tag) {
@@ -136,18 +154,21 @@ function region(html, lower, tag) {
   return close < 0 ? '' : html.slice(open + 1, close);
 }
 
-function attributes(tag) {
-  return Object.fromEntries([...tag.matchAll(/([\w:-]+)\s*=\s*(?:"([^"]*)"|'([^']*)')/g)].map((match) => [match[1].toLowerCase(), decodeEntities(match[2] ?? match[3])]));
+// Looks up one attribute by name; anchoring on whitespace + name keeps this linear in the tag length.
+function attribute(tag, name) {
+  const match = tag.match(new RegExp(`(?:^|\\s)${name}\\s*=\\s*(?:"([^"]*)"|'([^']*)'|([^\\s"'>]+))`, 'i'));
+  return match ? decodeEntities(match[1] ?? match[2] ?? match[3]) : '';
 }
 
 export function extractLinks(html, base) {
   const source = String(html);
   const result = [], seen = new Set();
   const opener = /<a\b([^>]{0,2000})>/gi;
-  let match;
-  while ((match = opener.exec(source)) && result.length < 400) {
-    const attrs = attributes(match[1]);
-    if (!attrs.href) continue;
+  let match, scanned = 0;
+  while ((match = opener.exec(source)) && result.length < 400 && scanned++ < 1500) {
+    const href = attribute(match[1], 'href');
+    if (!href) continue;
+    const attrs = { href, class: attribute(match[1], 'class') };
     const window = source.slice(opener.lastIndex, opener.lastIndex + 600);
     const close = asciiLower(window).indexOf('</a');
     try {
@@ -297,7 +318,9 @@ async function wikidataSites(name, readJson) {
     const site = entity?.claims?.P856?.find((claim) => claim.rank !== 'deprecated')?.mainsnak?.datavalue?.value;
     if (typeof site !== 'string' || !entityNames(entity).includes(needle)) return null;
     const description = entity.descriptions?.en?.value || '';
-    const score = 4 - rank * 0.5 + (GOOD_ENTITY.test(description) ? 4 : 0) - (BAD_ENTITY.test(description) ? 8 : 0);
+    // The description must positively read as a company, product, or service (a name match alone is not enough).
+    if (!GOOD_ENTITY.test(description) || BAD_ENTITY.test(description)) return null;
+    const score = 8 - rank * 0.5;
     try { return score > 3 ? { url: publicUrl(site).href, description: text(description, 80), score } : null; } catch { return null; }
   }).filter(Boolean).sort((a, b) => b.score - a.score);
 }
@@ -325,7 +348,8 @@ async function resolveName(name, tools, activity) {
     }
   } catch { /* Wikidata unavailable; try the next strategy. */ }
   const slug = norm(name);
-  if (slug.length >= 2 && slug.length <= 40) {
+  if (slug.length < 2) return ''; // too short to identify safely (for example "C++"); the caller asks for the website
+  if (slug.length <= 40) {
     const guesses = ['com', 'io', 'app', 'co', 'dev'].map((tld) => `https://${slug}.${tld}/`);
     const results = await Promise.allSettled(guesses.map((url) => tools.readPage(url)));
     const nameWord = new RegExp(`(^|[^a-z0-9])${name.toLowerCase().replace(/[^a-z0-9 ]/g, '').trim().replace(/\s+/g, '[\\s-]*')}([^a-z0-9]|$)`, 'i');
@@ -338,7 +362,8 @@ async function resolveName(name, tools, activity) {
     }
   }
   const matches = await discover(`${name} official developer OAuth documentation`, tools.readPage);
-  const match = matches.find((row) => norm(new URL(row.url).hostname).includes(slug) && !/wikipedia|reddit|stackoverflow|medium\.com|youtube\.com/.test(row.url));
+  // A search hit counts only when one whole domain label equals the name (not a substring match).
+  const match = matches.find((row) => new URL(row.url).hostname.split('.').some((label) => norm(label) === slug) && !/wikipedia|reddit|stackoverflow|medium\.com|youtube\.com/.test(row.url));
   if (match) {
     activity.push({ label: 'Found a matching provider domain in public search; verify the website identity below', status: 'complete' });
     return new URL(match.url).origin;
@@ -390,7 +415,8 @@ const ADMIN_CLAIM = /(?:admin|owner).{0,30}approv|approv.{0,30}(?:admin|owner)/i
 // Every duration in a claim must appear, with the same number and unit, on a cited page.
 function durationsSupported(claim, pages) {
   const durations = [...claim.matchAll(DURATION)];
-  return durations.every(([, number, unit]) => pages.some((page) => new RegExp(`\\b${number}\\b[^.\\n]{0,30}\\b${unit}`, 'i').test(page.content)));
+  // Both ends of a range ("2-14 days") must appear with the unit on a cited page.
+  return durations.every(([, low, high, unit]) => [low, high].filter(Boolean).every((number) => pages.some((page) => new RegExp(`\\b${number}\\b[^.\\n]{0,30}\\b${unit}`, 'i').test(page.content))));
 }
 
 function validateSynthesis(value, pages, fallback) {
@@ -405,6 +431,9 @@ function validateSynthesis(value, pages, fallback) {
     const claim = `${row.title || ''} ${row.text || ''} ${row.description || ''} ${row.nextAction || ''}`;
     return ((row.owner === 'Provider' || REVIEW_CLAIM.test(claim)) && !supported(row, PROVIDER_REVIEW)) || ((row.owner === 'Workspace admin' || ADMIN_CLAIM.test(claim)) && !supported(row, ADMIN_APPROVAL));
   };
+  // Any duration in a requirement, step, or blocker must appear (same numbers and unit) on the pages that row cites.
+  const timingSupported = (claim, row) => !String(claim || '').match(DURATION) || durationsSupported(String(claim), pages.filter((page) => citations(row).includes(page.id)));
+  const withoutUnsupportedTiming = (value, row, limit) => text(value, limit).split(/(?<=[.!?])\s+/).filter((sentence) => sentence && timingSupported(sentence, row)).join(' ');
   // The summary has no citations, so drop any sentence asserting a review, admin gate, or review timing
   // that no retrieved page supports.
   const summary = text(value.summary, 1000).split(/(?<=[.!?])\s+/).filter((sentence) => {
@@ -420,8 +449,8 @@ function validateSynthesis(value, pages, fallback) {
   let approvalWait = 'No provider review requirement or waiting time was established from the retrieved pages. Confirm the distribution path before launch.';
   if (waitText && !/unknown|not (?:specified|stated|documented|established|mentioned)/i.test(waitText) && waitPages.some((page) => PROVIDER_REVIEW.test(page.content)) && durationsSupported(waitText, waitPages)) approvalWait = waitText;
   else if (reviewPages.length) approvalWait = `A review or verification step is mentioned in ${reviewPages.slice(0, 3).map((page) => page.id).join(', ')}, but no waiting time was established. Confirm whether it applies to your app and ask the provider for a timeline.`;
-  const requirements = (Array.isArray(value.requirements) ? value.requirements : []).filter(row => !unsupportedGate(row)).map((row) => ({ text: text(row.text, 600), sourceIds: citations(row) })).filter((row) => row.text && row.sourceIds.length).slice(0, 8);
-  const steps = value.steps.map(row => unsupportedGate(row) ? { title: 'Confirm the approval path for your use case', description: 'The cited material did not establish this approval requirement. Ask the provider whether your scopes, intended audience, or distribution method need review; do not assume user consent means provider approval.', owner: 'You', sourceIds: [] } : row).map((row) => ({ title: text(row.title, 100), description: text(row.description, 700), owner: ['Agent', 'You', 'You + provider', 'Provider', 'Workspace admin'].includes(row.owner) ? row.owner : 'You', sourceIds: citations(row) })).filter((row,index,rows) => row.title && row.description && rows.findIndex(other=>other.title===row.title)===index).slice(0, 8);
+  const requirements = (Array.isArray(value.requirements) ? value.requirements : []).filter(row => !unsupportedGate(row) && timingSupported(row.text, row)).map((row) => ({ text: text(row.text, 600), sourceIds: citations(row) })).filter((row) => row.text && row.sourceIds.length).slice(0, 8);
+  const steps = value.steps.map(row => unsupportedGate(row) ? { title: 'Confirm the approval path for your use case', description: 'The cited material did not establish this approval requirement. Ask the provider whether your scopes, intended audience, or distribution method need review; do not assume user consent means provider approval.', owner: 'You', sourceIds: [] } : row).map((row) => ({ title: timingSupported(row.title, row) ? text(row.title, 100) : '', description: withoutUnsupportedTiming(row.description, row, 700), owner: ['Agent', 'You', 'You + provider', 'Provider', 'Workspace admin'].includes(row.owner) ? row.owner : 'You', sourceIds: citations(row) })).filter((row,index,rows) => row.title && row.description && rows.findIndex(other=>other.title===row.title)===index).slice(0, 8);
   if (steps.length < 3) throw new Error('The guide lacks enough actionable steps');
   return {
     ...fallback,
@@ -432,7 +461,7 @@ function validateSynthesis(value, pages, fallback) {
     approvalWait,
     requirements,
     steps,
-    blockers: (Array.isArray(value.blockers) ? value.blockers : []).filter(row => !unsupportedGate(row)).map((row) => ({ text: text(row.text, 500), nextAction: text(row.nextAction, 500), sourceIds: citations(row) })).filter((row) => row.text && row.nextAction).slice(0, 5),
+    blockers: (Array.isArray(value.blockers) ? value.blockers : []).filter(row => !unsupportedGate(row) && timingSupported(`${row.text || ''} ${row.nextAction || ''}`, row)).map((row) => ({ text: text(row.text, 500), nextAction: text(row.nextAction, 500), sourceIds: citations(row) })).filter((row) => row.text && row.nextAction).slice(0, 5),
     uncertainties: [...new Set([...list(value.uncertainties, 5), fallback.uncertainties[0]])],
     agentCan: fallback.agentCan,
     humanMust: fallback.humanMust,

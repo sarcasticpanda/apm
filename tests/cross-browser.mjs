@@ -69,7 +69,7 @@ for (const [label, engine] of [['chromium', chromium], ['firefox', firefox], ['w
       const fresh = await browser.newPage();
       await fresh.goto(sharedUrl, { waitUntil: 'networkidle' });
       await fresh.locator('#generated-guide h2').waitFor();
-      assert.match(await fresh.locator('#generated-guide').innerText(), /SHARED RESEARCH SNAPSHOT/);
+      assert.match(await fresh.locator('#generated-guide').innerText(), /Shared research snapshot/i);
       const draftUrl = fresh.url();
       await fresh.locator('#generated-guide .inline-citation').first().click();
       await fresh.waitForTimeout(300);

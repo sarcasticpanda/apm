@@ -55,7 +55,7 @@ try {
  await noOverflow();await page.locator('#generated-guide').evaluate(el=>el.scrollIntoView({behavior:'instant',block:'start'}));await shot('generated-guide');
  await page.locator('#share-generated').click();await page.waitForFunction(()=>document.querySelector('#generated-guide .share-feedback').textContent.includes('Link copied'));
  const sharedDraft=await page.evaluate(()=>navigator.clipboard.readText());assert.match(sharedDraft,/#draft=/);
- const sharedContext=await browser.newContext();const shared=await sharedContext.newPage();await shared.goto(sharedDraft,{waitUntil:'networkidle'});await shared.locator('#generated-guide h2').waitFor();assert.match(await shared.locator('#generated-guide').innerText(),/SHARED RESEARCH SNAPSHOT/);await sharedContext.close();
+ const sharedContext=await browser.newContext();const shared=await sharedContext.newPage();await shared.goto(sharedDraft,{waitUntil:'networkidle'});await shared.locator('#generated-guide h2').waitFor();assert.match(await shared.locator('#generated-guide').innerText(),/Shared research snapshot/i);await sharedContext.close();
  const draftDl=page.waitForEvent('download');await page.locator('#download-generated').click();assert.match(await readFile(await(await draftDl).path(),'utf8'),/# Linear OAuth guide/);
  passed('Generated guide citations, compressed share snapshot, and Markdown export');
  const generatedAxe=await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21aa']).analyze();await writeFile(`artifacts/${prefix}-axe-generated.json`,JSON.stringify(generatedAxe.violations,null,2));

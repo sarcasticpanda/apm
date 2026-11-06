@@ -1,6 +1,6 @@
 # Five-minute demo
 
-1. **Frame the problem (30s).** Open https://oauth-path.kadakchai-panda.workers.dev. One provider OAuth app is one registration. Each user's connection is a separate consent. A provider review and a customer admin's approval are two more separate gates.
+1. **Frame the problem (30s).** Open https://oauth-path.kadakchai-panda.workers.dev. The route board shows each provider as one line through Register, Provider review, Customer admin, and User consent. The three lines differ at a glance: GitHub has no review, Slack's review is required, and Google's depends on scopes. One OAuth app is one registration; each user's connection is a separate consent.
 2. **GitHub, the light path (60s).** Open GitHub. Point out:
    - the first action;
    - the 1–3 hour estimate, labelled ours;

@@ -41,7 +41,7 @@ The restricted-scope page still contains a generic brand-review estimate. The gu
 
 ## Second review (5 November 2026)
 
-Independent reviewer agents re-fetched every cited URL (all 14 returned HTTP 200 at the same address) and checked each concrete claim. A second set of agents then tried to refute each finding. These corrections survived:
+Independent reviewer agents re-fetched every source URL cited by the three guides (14 URLs; all returned HTTP 200 at the same address) and checked each concrete claim. A second set of agents then tried to refute each finding. These corrections survived:
 
 | Earlier wording | Change | Source text |
 | --- | --- | --- |

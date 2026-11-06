@@ -19,7 +19,7 @@ Know the path before you build. OAuth Path shows developers and agent builders w
    - It crawls the highest-ranked OAuth pages, skipping marketing and sign-in pages.
    - Workers AI (Llama 3.3 70B) drafts a cited guide.
 
-   Every review, admin-approval, and timing claim the model makes is re-checked against the pages actually read. Unsupported claims are removed or turned into "confirm with the provider" tasks.
+   The model's review, admin-approval, and provider-timing claims are re-checked against the pages actually read. That covers the summary, approval wait, requirements, steps, and blockers. A time range passes only if both of its numbers appear in a cited page. Unsupported claims are removed or turned into "confirm with the provider" tasks. The model's own effort figure is shown as a labelled AI planning estimate, not a provider claim.
 3. **Sharing.** Library guides share by link. A generated draft travels as a compressed snapshot in the URL, so another person can open it without re-running research. Guides also export to Markdown and print to PDF. Checklist progress stays in the viewer's browser.
 
 ## Run locally
@@ -30,8 +30,14 @@ Requires Node.js 22+.
 npm ci
 npm run dev            # http://localhost:4173 (PORT changes it)
 npm test               # unit tests: SSRF guards, parsing, discovery, AI-claim validation, guide data
-npm run test:ui        # Chromium flows + axe accessibility scan (app must be running; BASE_URL to target a deployment)
-npm run test:browsers  # core flows in Chromium, Firefox, and WebKit
+```
+
+The browser suites need Playwright's browsers once, and the app running (locally, or set `BASE_URL` to a deployment):
+
+```sh
+npx playwright install chromium firefox webkit
+npm run test:ui              # Chromium flows + axe accessibility scan
+npm run test:browsers        # core flows in Chromium, Firefox, and WebKit
 node tests/exploratory.mjs   # 320px, print, clipboard denial, error recovery, private-file and private-address rejection
 ```
 
@@ -46,11 +52,14 @@ npm run deploy         # copies public assets to .output/public and deploys work
 
 `wrangler.jsonc` defines the Worker, the static-assets binding, and the Workers AI binding. No secrets are needed; keep Cloudflare credentials in Wrangler's login, never in the repo.
 
+**Stack:** vanilla HTML, CSS, and JavaScript (no framework or client bundle). It uses self-hosted IBM Plex Sans and Mono (OFL) from `@fontsource` and Phosphor icons (MIT); `scripts/build-icons.mjs` generates `icons.js`. It supports light and dark mode from the system setting and respects reduced motion.
+
 ## Key decisions
 
 - **Separate the gates.** The core confusion is that registering an app, a provider's review, a customer admin's approval, and each user's consent are different decisions with different owners and timelines. Every guide models them separately so "it works in my account" is never mistaken for "approved for launch".
 - **Three deep guides beat 100 shallow ones.** The take-home asks for a few varied apps, so each guide is source-checked step by step. The live agent covers the long tail.
 - **Effort and waiting are different numbers.** Hands-on estimates are labelled ours and exclude waiting. Provider review windows are quoted from the provider and never presented as a launch date.
+- **Show the route, not a wall of text.** The library is a route board. Each provider is one line through Register, Provider review, Customer admin, and User consent, with each gate's state drawn from the guide data. Gate states use shape and text as well as colour, so they read without colour vision and in dark mode.
 - **Honesty over coverage.** When the agent cannot find OAuth docs, it says so and gives the next action. It never fills the gap with plausible-sounding policy.
 - **Managed OAuth apps.** Borrowing a platform's pre-registered (and possibly pre-reviewed) app can remove registration and provider review. It does not remove user consent or customer-admin controls, and it usually limits you to that app's approved scopes and branding. The site explains this trade-off; it does not assume any specific vendor.
 
