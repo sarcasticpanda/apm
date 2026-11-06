@@ -1,7 +1,7 @@
 // Generates icons.js from Phosphor Icons (MIT, https://phosphoricons.com) so the UI never hand-draws icons.
 // Run: node scripts/build-icons.mjs
 import { readFile, writeFile } from 'node:fs/promises';
-const names = ['magnifying-glass', 'arrow-up-right', 'arrow-left', 'caret-right', 'link-simple', 'download-simple', 'printer', 'lock-simple', 'warning', 'check'];
+const names = ['magnifying-glass', 'arrow-up-right', 'arrow-left', 'caret-right', 'link-simple', 'download-simple', 'printer', 'lock-simple', 'warning', 'check', 'arrow-right', 'seal-check', 'clock', 'seal-question'];
 const icons = {};
 for (const name of names) {
   const svg = await readFile(new URL(`../node_modules/@phosphor-icons/core/assets/regular/${name}.svg`, import.meta.url), 'utf8');

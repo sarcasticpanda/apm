@@ -52,12 +52,9 @@ function renderLibrary() {
   appGrid.innerHTML = matches.length ? matches.map((g, index) => {
     const band = g.band === 'light' ? 'light' : 'review';
     return `<button class="app-card band-${band}" type="button" data-guide="${escapeHtml(g.id)}" aria-label="Open ${escapeHtml(g.name)} setup guide" aria-describedby="route-${escapeHtml(g.id)}" style="--i:${index}">
-      <span class="card-top">${logo(g)}<span class="effort-label">${escapeHtml(g.effort)}</span></span>
-      <span class="card-name">${escapeHtml(g.name)}</span>
-      <span class="tagline">${escapeHtml(g.tagline)}</span>
+      <span class="card-top">${logo(g)}<span class="card-title"><span class="card-name">${escapeHtml(g.name)}</span><span class="tagline">${escapeHtml(g.tagline)}</span></span><span class="effort-label">${escapeHtml(g.effort)}</span></span>
       <span class="route" id="route-${escapeHtml(g.id)}">${routeStops(g)}</span>
-      <span class="card-stats"><span><small>Hands-on, our estimate</small><strong>${escapeHtml(g.time.split(' · ')[0])}</strong></span><span><small>Approval</small><strong class="stat-${band}">${escapeHtml(g.waitSummary || g.wait)}</strong></span></span>
-      <span class="card-go" aria-hidden="true">Open the guide${icon('caret-right')}</span>
+      <span class="card-foot"><span class="card-stats"><span><small>Hands-on, our estimate</small><strong>${escapeHtml(g.time.split(' · ')[0])}</strong></span><span><small>Approval</small><strong class="stat-${band}">${escapeHtml(g.waitSummary || g.wait)}</strong></span></span><span class="card-go" aria-hidden="true">Open the guide${icon('arrow-right')}</span></span>
     </button>`;
   }).join('') : '<div class="empty-results"><strong>No matching guide yet.</strong><p>Try another search, or research the app from its public docs.</p><a class="button button-secondary" href="#generate">Research an app</a></div>';
   firstRender = false;
@@ -71,12 +68,12 @@ function renderExplorer(focusTab = false, animate = true) {
   if (!tabs || !panel || !guides.length) return;
   if (!guides.some(g => g.id === explorerId)) explorerId = guides[0].id;
   const g = guides.find(guide => guide.id === explorerId);
-  tabs.innerHTML = guides.map(guide => `<button type="button" role="tab" class="explorer-tab" id="explore-tab-${escapeHtml(guide.id)}" data-explore="${escapeHtml(guide.id)}" aria-selected="${guide.id === explorerId}" aria-controls="explorer-panel" tabindex="${guide.id === explorerId ? 0 : -1}">${logo(guide)}<span>${escapeHtml(guide.name)}</span></button>`).join('');
+  tabs.innerHTML = guides.map(guide => `<button type="button" role="tab" class="explorer-tab map-line" id="explore-tab-${escapeHtml(guide.id)}" data-explore="${escapeHtml(guide.id)}" aria-selected="${guide.id === explorerId}" aria-controls="explorer-panel" tabindex="${guide.id === explorerId ? 0 : -1}"><span class="line-id">${logo(guide)}<span class="line-name">${escapeHtml(guide.name)}</span></span><span class="line-track" aria-hidden="true">${routeStops(guide)}</span><span class="line-time" aria-hidden="true">${escapeHtml(guide.time.split(' · ')[0])}</span></button>`).join('');
   panel.setAttribute('aria-labelledby', `explore-tab-${g.id}`);
   const stops = [{ who: 'Register', level: 'start', status: 'Self-service', note: 'You create the app in the provider’s developer console and get a client ID.' }, ...list(g.gates, 3).filter(gate => gate && GATE_LEVELS[gate.level])];
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  panel.innerHTML = `<ol class="trail${animate && !reduce ? ' animate-trail' : ''}">${stops.map((stop, i) => `<li class="trail-stop stop-${stop.level}" style="--i:${i}"><span class="gate-mark mark-${stop.level}" aria-hidden="true"></span><div class="trail-copy"><span class="trail-who">${escapeHtml(stop.who)}<span class="visually-hidden">: </span></span><strong class="trail-status">${escapeHtml(stop.status)}</strong><p>${escapeHtml(stop.note)}</p></div></li>`).join('')}</ol>
-    <div class="explorer-foot"><dl><div><dt>Hands-on</dt><dd>${escapeHtml(g.time.split(' · ')[0])}</dd></div><div><dt>Approval</dt><dd>${escapeHtml(g.waitSummary || g.wait)}</dd></div></dl><button type="button" class="button button-lime button-small" data-open-guide="${escapeHtml(g.id)}">Open the ${escapeHtml(g.name)} guide</button></div>`;
+  panel.innerHTML = `<div class="map-detail${animate && !reduce ? ' animate-trail' : ''}"><div class="detail-id"><p class="detail-name">${escapeHtml(g.name)}</p><p class="detail-effort">${escapeHtml(g.effort)}</p></div><ol class="trail">${stops.map((stop, i) => `<li class="trail-stop stop-${stop.level}" style="--i:${i}"><span class="gate-mark mark-${stop.level}" aria-hidden="true"></span><div class="trail-copy"><span class="trail-who">${escapeHtml(stop.who)}<span class="visually-hidden">: </span></span><strong class="trail-status">${escapeHtml(stop.status)}</strong><p>${escapeHtml(stop.note)}</p></div></li>`).join('')}</ol>
+    <div class="explorer-foot"><dl><div><dt>Hands-on, our estimate</dt><dd>${escapeHtml(g.time.split(' · ')[0])}</dd></div><div><dt>Approval</dt><dd>${escapeHtml(g.waitSummary || g.wait)}</dd></div></dl><button type="button" class="button button-lime button-small" data-open-guide="${escapeHtml(g.id)}">Open the ${escapeHtml(g.name)} guide${icon('arrow-right')}</button></div></div>`;
   $$('[data-explore]', tabs).forEach(tab => {
     tab.addEventListener('click', () => { if (tab.dataset.explore !== explorerId) { explorerId = tab.dataset.explore; renderExplorer(true); } });
     tab.addEventListener('keydown', event => {
@@ -335,7 +332,7 @@ $('#generate-form').addEventListener('submit', async event => {
   }
 });
 async function initialise() {
-  appGrid.innerHTML = `<div class="route-skeleton" role="status"><span class="visually-hidden">Loading the guide library</span>${'<span class="skeleton-row"></span>'.repeat(6)}</div>`;
+  appGrid.innerHTML = `<div class="route-skeleton" role="status"><span class="visually-hidden">Loading the guide library</span>${'<span class="skeleton-row"><span></span><span></span><span></span></span>'.repeat(6)}</div>`;
   try {
     const response = await fetch('/guides.json'); if (!response.ok) throw new Error();
     guides = await response.json(); renderLibrary(); renderExplorer(false, false); await loadSharedState();

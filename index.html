@@ -30,28 +30,34 @@
   <main id="main">
     <section class="hero" id="top" aria-labelledby="hero-title">
       <div class="hero-inner">
-        <div class="hero-copy">
+        <div class="hero-head">
           <h1 id="hero-title">Know the path <span>before you build.</span></h1>
-          <p class="hero-intro">Setup steps, approval gates, and real timing for each OAuth provider. Every claim links to the page it came from.</p>
-          <div class="hero-actions">
-            <a class="button button-lime" href="#library">Browse the guides</a>
-            <a class="button button-ghost" href="#generate">Research an app</a>
+          <div class="hero-side">
+            <p class="hero-intro">Setup steps, approval gates, and real timing for each OAuth provider. Every claim links to the page it came from.</p>
+            <div class="hero-actions">
+              <a class="button button-lime" href="#library">Browse the guides</a>
+              <a class="button button-ghost" href="#generate">Research an app</a>
+            </div>
           </div>
         </div>
-        <div class="explorer" aria-labelledby="explorer-title">
-          <div class="explorer-head">
-            <h2 id="explorer-title">Route explorer</h2>
-            <p>Pick a provider to trace its path to a user's first connection.</p>
+        <section class="explorer" aria-labelledby="explorer-title">
+          <div class="map-head">
+            <div class="map-title"><h2 id="explorer-title">Compare the routes</h2><p>Select a provider to read its stops.</p></div>
+            <span class="station" aria-hidden="true"><b>1</b>Register</span>
+            <span class="station" aria-hidden="true"><b>2</b>Provider review</span>
+            <span class="station" aria-hidden="true"><b>3</b>Customer admin</span>
+            <span class="station" aria-hidden="true"><b>4</b>User consent</span>
+            <span class="station-end" aria-hidden="true">Hands-on</span>
           </div>
-          <div class="explorer-tabs" id="explorer-tabs" role="tablist" aria-label="Providers"></div>
+          <div class="explorer-tabs" id="explorer-tabs" role="tablist" aria-label="Providers" aria-orientation="vertical"></div>
           <div class="explorer-panel" id="explorer-panel" role="tabpanel" aria-labelledby="explorer-title"></div>
-        </div>
+        </section>
       </div>
     </section>
 
     <section class="library wrap" id="library" aria-labelledby="library-title">
       <div class="library-head">
-        <h2 id="library-title">Pick a provider. <span>See every gate.</span></h2>
+        <h2 id="library-title">Pick a provider. See every gate.</h2>
         <p>Six providers, six different hardest steps. Each guide is checked against the provider's own documentation.</p>
       </div>
       <div class="library-toolbar">
@@ -61,14 +67,14 @@
           <button class="filter" data-filter="light" type="button" aria-pressed="false">Light setup</button>
           <button class="filter" data-filter="review" type="button" aria-pressed="false">Needs review</button>
         </div>
+        <ul class="route-legend" aria-label="What the route markers mean">
+          <li><span class="gate-mark mark-none" aria-hidden="true"></span>No gate found</li>
+          <li><span class="gate-mark mark-possible" aria-hidden="true"></span>May apply</li>
+          <li><span class="gate-mark mark-depends" aria-hidden="true"></span>Depends on your setup</li>
+          <li><span class="gate-mark mark-required" aria-hidden="true"></span>Required</li>
+          <li><span class="gate-mark mark-always" aria-hidden="true"></span>Every user</li>
+        </ul>
       </div>
-      <ul class="route-legend" aria-label="What the route markers mean">
-        <li><span class="gate-mark mark-none" aria-hidden="true"></span>No gate found</li>
-        <li><span class="gate-mark mark-possible" aria-hidden="true"></span>May apply</li>
-        <li><span class="gate-mark mark-depends" aria-hidden="true"></span>Depends on your setup</li>
-        <li><span class="gate-mark mark-required" aria-hidden="true"></span>Required</li>
-        <li><span class="gate-mark mark-always" aria-hidden="true"></span>Every user</li>
-      </ul>
       <div class="app-grid" id="app-grid"></div>
       <p class="visually-hidden" id="library-status" role="status" aria-live="polite"></p>
       <p class="library-more">Not listed? <a class="text-link" href="#generate">Research any app from its public docs</a>.</p>
@@ -84,7 +90,7 @@
     <section class="generate wrap" id="generate" aria-labelledby="generate-title">
       <div class="generate-inner">
         <div class="generate-copy">
-          <h2 id="generate-title">Your next integration starts with <span>a question.</span></h2>
+          <h2 id="generate-title">Your next integration starts with a question.</h2>
           <p>Enter any app's name or website. The research agent finds its developer docs, reads the OAuth and review pages, and drafts a guide with sources and open questions.</p>
           <ol class="agent-steps">
             <li><strong>Finds the provider</strong><span>Built-in directory, Wikidata's official-site record, or a verified domain.</span></li>
@@ -114,7 +120,7 @@
 
     <section class="process wrap" id="how-it-works" aria-labelledby="process-title">
       <div class="process-intro">
-        <h2 id="process-title">One registration. <span>Many user connections.</span></h2>
+        <h2 id="process-title">One registration. Many user connections.</h2>
         <p>An OAuth app identifies your integration to a provider. Each user then grants it access to their own account, and a provider or a customer admin may need to approve it first.</p>
       </div>
       <ol class="process-track">
@@ -129,11 +135,14 @@
     </section>
 
     <section class="evidence-section wrap" id="evidence" aria-labelledby="evidence-title">
-      <h2 id="evidence-title">The evidence travels <span>with the guide.</span></h2>
+      <div class="evidence-head">
+        <h2 id="evidence-title">The evidence travels with the guide.</h2>
+        <p>Each guide keeps what the provider documents apart from what we estimate and what still needs a check.</p>
+      </div>
       <dl class="evidence-list">
-        <div class="evidence-documented"><dt>Documented</dt><dd><strong>The provider says so.</strong> An official page supports the step or rule, and the guide links to it so you can check the current wording.</dd></div>
-        <div class="evidence-estimate"><dt>Estimate</dt><dd><strong>Our planning range.</strong> Hands-on effort depends on your code, scopes, and experience. It is labelled as ours and never presented as a provider's promised timeline.</dd></div>
-        <div class="evidence-unknown"><dt>Unverified</dt><dd><strong>Still needs a check.</strong> Missing details, blocked pages, and untested steps stay visible. A generated guide does not mean an app was registered or approved.</dd></div>
+        <div class="evidence-documented"><dt><span data-icon="seal-check"></span>Documented</dt><dd><strong>The provider says so.</strong> An official page supports the step or rule, and the guide links to it so you can check the current wording.</dd></div>
+        <div class="evidence-estimate"><dt><span data-icon="clock"></span>Estimate</dt><dd><strong>Our planning range.</strong> Hands-on effort depends on your code, scopes, and experience. It is labelled as ours and never presented as a provider's promised timeline.</dd></div>
+        <div class="evidence-unknown"><dt><span data-icon="seal-question"></span>Unverified</dt><dd><strong>Still needs a check.</strong> Missing details, blocked pages, and untested steps stay visible. A generated guide does not mean an app was registered or approved.</dd></div>
       </dl>
     </section>
 
