@@ -33,13 +33,14 @@ function renderLibrary() {
   const query = searchInput.value.trim().toLowerCase();
   const matches = guides.filter(g => (currentFilter === 'all' || g.band === currentFilter) && `${g.name} ${g.tagline} ${g.summary}`.toLowerCase().includes(query));
   appGrid.innerHTML = matches.length ? matches.map(g => `
-    <button class="app-card" type="button" data-guide="${escapeHtml(g.id)}" aria-label="Open ${escapeHtml(g.name)} setup guide">
+    <button class="app-card band-${g.band === 'light' ? 'light' : 'review'}" type="button" data-guide="${escapeHtml(g.id)}" aria-label="Open ${escapeHtml(g.name)} setup guide">
       <span class="app-card-top"><span class="app-identity">${logo(g)}<span>${escapeHtml(g.name)}</span></span><span class="effort-label">${escapeHtml(g.effort)}</span></span>
       <span class="app-card-copy"><span class="tagline">${escapeHtml(g.tagline)}</span></span>
       <span class="app-stats"><span class="app-stat"><small>HANDS-ON WORK</small><strong>${escapeHtml(g.time)}</strong></span><span class="app-stat"><small>APPROVAL PATH</small><strong class="${g.band === 'light' ? 'stat-light' : 'stat-review'}">${escapeHtml(g.waitSummary || g.wait)}</strong></span></span>
       <span class="card-footer"><span class="card-evidence">${g.sources.length} official sources</span><span class="card-cta" aria-hidden="true">↗</span></span>
     </button>`).join('') : '<div class="empty-results"><strong>No matching guide yet.</strong><p>Try a different search, or research an app outside this library.</p><a class="text-link" href="#generate">Research another app ↗</a></div>';
   $$('[data-guide]', appGrid).forEach(button => button.addEventListener('click', () => openGuide(button.dataset.guide)));
+  $('#library-status').textContent = `${matches.length} of ${guides.length} guides shown`;
 }
 function citations(ids, sources, prefix) {
   return list(ids).map(id => {
@@ -51,12 +52,23 @@ function sourcesMarkup(sources, prefix) {
   return sources.map((s, i) => `<li id="${prefix}-source-${i + 1}"><span class="source-number">${String(i + 1).padStart(2,'0')}</span><div><a href="${escapeHtml(safeUrl(s.url))}" target="_blank" rel="noopener noreferrer">${escapeHtml(s.title)} <span aria-hidden="true">↗</span></a><span class="source-kind">${escapeHtml(s.kind || 'Official page read')}${s.checkedAt ? ` · ${dateLabel(s.checkedAt)}` : ''}</span>${s.excerpt ? `<details class="source-excerpt"><summary>Read evidence excerpt</summary><p>${escapeHtml(s.excerpt)}</p></details>` : ''}</div></li>`).join('');
 }
 function bulletList(values) { return `<ul>${list(values).map(v=>`<li>${escapeHtml(v)}</li>`).join('')}</ul>`; }
+function ownerClass(owner = '') {
+  const value = String(owner).toLowerCase();
+  if (/provider|slack|google|github|admin|customer|reviewer/.test(value)) return 'owner-external';
+  return /agent/.test(value) ? 'owner-agent' : 'owner-you';
+}
+const GATE_LEVELS = { none: 'No gate', possible: 'Possible', required: 'Required', depends: 'Depends', always: 'Always' };
+function gatesMarkup(gates, sources, prefix) {
+  const rows = list(gates, 4).filter(gate => gate && GATE_LEVELS[gate.level]);
+  if (!rows.length) return '';
+  return `<section class="guide-block gates-block" aria-labelledby="${prefix}-gates-title"><h3 id="${prefix}-gates-title">Who has to say yes</h3><p>Registration, provider review, customer administration, and user consent are separate decisions. Plan for each one that applies.</p><ul class="gate-grid">${rows.map(gate => `<li class="gate gate-${gate.level}"><span class="gate-who">${escapeHtml(gate.who)}</span><strong><span class="gate-dot" aria-hidden="true"></span>${escapeHtml(gate.status)}</strong><p>${escapeHtml(gate.note)} ${citations(gate.sourceIds, sources, prefix)}</p></li>`).join('')}</ul></section>`;
+}
 function progressFor(id, count) {
   return list(storage.get(`oauthpath:${id}:steps`), count).filter(i=>Number.isInteger(i) && i >= 0 && i < count);
 }
 function stepList(steps, sources, prefix, id) {
   const completed = progressFor(id, steps.length);
-  return `<ol class="steps">${steps.map((s,i)=>`<li class="step ${completed.includes(i)?'done':''}" data-index="${i}"><div class="step-body"><label><input type="checkbox" data-progress="${escapeHtml(id)}" value="${i}" ${completed.includes(i)?'checked':''}><span class="step-copy"><strong>${escapeHtml(s.title)}</strong><span>${escapeHtml(s.description)}</span></span></label>${citations(s.sourceIds,sources,prefix)}</div><span class="step-owner">${escapeHtml(s.owner || 'YOU')}</span></li>`).join('')}</ol>`;
+  return `<ol class="steps">${steps.map((s,i)=>`<li class="step ${completed.includes(i)?'done':''}" data-index="${i}"><div class="step-body"><label><input type="checkbox" data-progress="${escapeHtml(id)}" value="${i}" ${completed.includes(i)?'checked':''}><span class="step-copy"><strong>${escapeHtml(s.title)}</strong><span>${escapeHtml(s.description)}</span></span></label>${citations(s.sourceIds,sources,prefix)}</div><span class="step-owner ${ownerClass(s.owner)}">${escapeHtml(s.owner || 'You')}</span></li>`).join('')}</ol>`;
 }
 function attachProgress(root, id, count) {
   const update = () => {
@@ -85,12 +97,13 @@ function openGuide(id, updateUrl = true) {
     <p class="guide-subtitle">${escapeHtml(g.summary)}</p>
     <div class="guide-metrics"><div class="guide-metric"><small>HANDS-ON WORK · ESTIMATE</small><strong>${escapeHtml(g.time)}</strong></div><div class="guide-metric"><small>APPROVAL & WAIT</small><strong>${escapeHtml(g.wait)}</strong></div><div class="guide-metric"><small>EFFORT</small><strong>${escapeHtml(g.effortLabel)}</strong></div></div>
     <div class="blocker next-step"><strong>Your first step</strong><p>${escapeHtml(g.firstAction)}</p></div>
+    ${gatesMarkup(g.gates, sources, 'guide')}
     <section class="guide-block"><h3>Your setup path</h3><p>Follow the steps in order. Each source number opens the supporting documentation below.</p>${stepList(steps,sources,'guide',id)}</section>
     <section class="guide-block"><h3>If you hit a blocker</h3><div class="blocker"><p>${escapeHtml(g.blocker)}</p></div></section>
     <section class="guide-block"><h3>Who does what</h3><div class="handoff-grid"><div><h4>The agent can help</h4>${bulletList(g.handoffs?.agent)}</div><div><h4>You take over</h4>${bulletList(g.handoffs?.human)}</div></div>${g.handoffs?.provider?.length ? `<div class="provider-handoff"><strong>Provider or customer decision</strong>${bulletList(g.handoffs.provider)}</div>`:''}</section>
     <section class="guide-block"><h3>Scope and uncertainty</h3><p>${escapeHtml(g.caveat)}</p><p>${escapeHtml(g.estimateBasis)}</p>${bulletList(g.uncertainties)}</section>
     <section class="guide-block"><h3>Sources and checks</h3><p>Checked ${dateLabel(g.checkedAt)}. ${escapeHtml(g.evidenceStatus)}</p><ul class="source-list">${sourcesMarkup(sources,'guide')}</ul></section>`;
-  $('#guide-rail').innerHTML = `<div class="rail-card"><p class="eyebrow">YOUR CHECKLIST</p><h3>One step closer.</h3><p>Progress stays in this browser. Sharing a guide doesn’t share your checklist.</p><div class="rail-progress"><span id="progress-count">${done.length} of ${steps.length} steps</span><span id="progress-percent">${Math.round(done.length/steps.length*100)}%</span></div><div class="progress-track"><div id="progress-fill" class="progress-fill" style="width:${done.length/steps.length*100}%"></div></div><div class="rail-links"><button class="share-guide" id="share-known"><span>Copy guide link</span><span aria-hidden="true">↗</span></button><button class="share-guide" id="download-known"><span>Download Markdown</span><span aria-hidden="true">↓</span></button><button class="share-guide" id="print-known"><span>Print / save as PDF</span><span aria-hidden="true">↗</span></button></div><p class="rail-note">${sources.length} official sources · checked ${dateLabel(g.checkedAt)}</p><div class="share-feedback" role="status" aria-live="polite"></div></div>`;
+  $('#guide-rail').innerHTML = `<div class="rail-card"><p class="eyebrow">YOUR CHECKLIST</p><h3>One step closer.</h3><p>Progress stays in this browser. Sharing a guide doesn’t share your checklist.</p><div class="rail-progress"><span id="progress-count">${done.length} of ${steps.length} steps</span><span id="progress-percent">${Math.round(done.length/steps.length*100)}%</span></div><div class="progress-track"><div id="progress-fill" class="progress-fill" style="width:${done.length/steps.length*100}%"></div></div><div class="rail-links"><button class="share-guide" id="share-known" type="button"><span>Copy guide link</span><span aria-hidden="true">↗</span></button><button class="share-guide" id="download-known" type="button"><span>Download Markdown</span><span aria-hidden="true">↓</span></button><button class="share-guide" id="print-known" type="button"><span>Print / save as PDF</span><span aria-hidden="true">↗</span></button></div><p class="rail-note">${sources.length} official sources · checked ${dateLabel(g.checkedAt)}</p><div class="share-feedback" role="status" aria-live="polite"></div></div>`;
   $('#guide-section').hidden = false;
   $('#generated-guide').hidden = true;
   attachProgress($('#guide-content'),id,steps.length);
@@ -101,7 +114,9 @@ function openGuide(id, updateUrl = true) {
   moveTo($('#guide-section'),$('.guide-title'));
 }
 function markdownForKnown(g) {
-  const lines = [`# ${g.name} OAuth setup`, '', g.summary, '', `**Hands-on estimate:** ${g.time}`, `**Approval:** ${g.wait}`, '', `**First step:** ${g.firstAction}`, '', '## Setup steps'];
+  const lines = [`# ${g.name} OAuth setup`, '', g.summary, '', `**Hands-on estimate:** ${g.time}`, `**Approval:** ${g.wait}`, '', `**First step:** ${g.firstAction}`];
+  if (g.gates?.length) lines.push('', '## Who has to say yes', ...g.gates.map(gate => `- **${gate.who}: ${gate.status}.** ${gate.note}`));
+  lines.push('', '## Setup steps');
   g.steps.forEach(([title,desc,owner],i)=>lines.push(`\n${i+1}. **${title}** (${owner})\n   ${desc}\n   ${(g.sourceIdsByStep?.[i] || []).map(n=>`[Source ${n}](${g.sources[n-1][1]})`).join(' · ')}`));
   lines.push('', '## If blocked',g.blocker,'','## Limits',g.caveat,g.estimateBasis,...g.uncertainties.map(v=>`- ${v}`),'','## Evidence',`Checked ${g.checkedAt}. ${g.evidenceStatus}`,...g.sources.map(([t,u])=>`- [${t}](${u})`));
   return lines.join('\n');
@@ -132,7 +147,8 @@ function normaliseResearch(raw) {
   const ids=(v)=>list(v,8).map(String).filter(id=>sourceIds.has(id));
   const textList=(v)=>list(v,12).map(v=>text(v,1000)).filter(Boolean);
   return {
-    id: text(raw.id,100).replace(/[^a-zA-Z0-9_-]/g,'') || 'shared-guide', name:text(raw.name,100),domain:text(raw.domain,250),url:safeUrl(raw.url),researchedAt:text(raw.researchedAt,40),
+    // Namespace shared ids so a crafted link cannot write into a curated guide's saved checklist.
+    id: ((id)=>id.startsWith('research-') ? id : `shared-${id || 'guide'}`)(text(raw.id,100).replace(/[^a-zA-Z0-9_-]/g,'')), name:text(raw.name,100),domain:text(raw.domain,250),url:safeUrl(raw.url),researchedAt:text(raw.researchedAt,40),
     mode:raw.mode==='ai'?'ai':'evidence',oauthSupport:raw.oauthSupport==='documented'?'documented':'unconfirmed',
     summary:text(raw.summary),difficulty:text(raw.difficulty,300),setupEffort:text(raw.setupEffort,700),approvalWait:text(raw.approvalWait,700),
     steps:list(raw.steps,12).map(s=>({title:text(s.title,180),description:text(s.description,1500),owner:text(s.owner,90),sourceIds:ids(s.sourceIds)})),
@@ -146,9 +162,9 @@ function renderDraft(result, shared=false) {
   draft=normaliseResearch(result);
   const d=draft;
   const container=$('#generated-guide');
-  container.innerHTML=`<div class="generated-guide-head"><div><p class="eyebrow">${shared?'SHARED RESEARCH SNAPSHOT':'LIVE RESEARCH RESULT'} · ${escapeHtml(d.domain)}</p><h2>${escapeHtml(d.name)} OAuth guide</h2></div><span class="draft-tag">${d.mode==='ai'?'AI-SYNTHESIZED DRAFT':'EXTRACTED EVIDENCE'}</span></div>
+  container.innerHTML=`<div class="generated-guide-head"><div><p class="eyebrow">${shared?'SHARED RESEARCH SNAPSHOT':'LIVE RESEARCH RESULT'} · ${escapeHtml(d.domain)}</p><h2>${escapeHtml(d.name)} OAuth guide</h2></div><span class="draft-tag mode-${d.mode}">${d.mode==='ai'?'AI-SYNTHESIZED DRAFT':'EXTRACTED EVIDENCE'}</span></div>
     <p class="guide-subtitle">${escapeHtml(d.summary)}</p>
-    <div class="status-banner"><strong>${d.oauthSupport==='documented'?'OAuth documentation found':'OAuth support remains unconfirmed'}</strong><p>${shared?'This link contains a snapshot supplied by the person who shared it. It has not been independently rechecked on this device.':'The agent read public pages; it did not create a provider account, exchange a token, or submit for approval.'} ${d.mode==='evidence'?'AI synthesis was unavailable. These findings are extracted from retrieved pages; confirm the requirements before acting.':'Review cited claims against the official pages before relying on this draft.'}</p></div>
+    <div class="status-banner status-${d.oauthSupport}"><strong>${d.oauthSupport==='documented'?'OAuth documentation found — review before relying on it':'OAuth support remains unconfirmed'}</strong><p>${shared?'This link contains a snapshot supplied by the person who shared it. It has not been independently rechecked on this device.':'The agent read public pages; it did not create a provider account, exchange a token, or submit for approval.'} ${d.mode==='evidence'?'AI synthesis was unavailable. These findings are extracted from retrieved pages; confirm the requirements before acting.':'Review cited claims against the official pages before relying on this draft.'}</p></div>
     <div class="guide-metrics"><div class="guide-metric"><small>SETUP EFFORT</small><strong>${escapeHtml(d.setupEffort || 'Not verified')}</strong></div><div class="guide-metric"><small>APPROVAL WAIT</small><strong>${escapeHtml(d.approvalWait || 'Not verified')}</strong></div><div class="guide-metric"><small>COMPLEXITY</small><strong>${escapeHtml(d.difficulty || 'Requires confirmation')}</strong></div></div>
     <div class="generated-grid"><section class="generated-panel"><h3>Setup path</h3>${stepList(d.steps,d.sources,'draft',d.id)}</section><section class="generated-panel"><h3>Requirements found</h3>${d.requirements.length?`<ul>${d.requirements.map(r=>`<li>${escapeHtml(r.text)} ${citations(r.sourceIds,d.sources,'draft')}</li>`).join('')}</ul>`:'<p>No provider-specific requirements were confirmed. Start with the linked documentation.</p>'}<h3>Blockers and next actions</h3>${d.blockers.map(b=>`<div class="blocker"><strong>${escapeHtml(b.text)}</strong><p>${escapeHtml(b.nextAction)} ${citations(b.sourceIds,d.sources,'draft')}</p></div>`).join('') || '<p>No specific approval blockers were confirmed.</p>'}</section>
     <section class="generated-panel"><h3>Who does what</h3><h4>The agent can help</h4>${bulletList(d.agentCan)}<h4>You take over</h4>${bulletList(d.humanMust)}</section><section class="generated-panel"><h3>What still needs checking</h3>${bulletList(d.uncertainties)}<h4>Research activity</h4><ul class="research-log">${d.activity.map(a=>`<li><span>${escapeHtml(a.label)}</span><small>${escapeHtml(a.status)}</small></li>`).join('')}</ul></section></div>
@@ -197,8 +213,14 @@ async function loadSharedState() {
     try {renderDraft(await decodeDraft(hash.get('draft') || params.get('draft')),true);}
     catch(error){const el=$('#generated-guide');el.hidden=false;el.innerHTML=`<div class="status-banner error"><h2>Couldn’t open this guide</h2><p>${escapeHtml(error.message)}</p><a class="text-link" href="#generate">Research the app again ↗</a></div>`;moveTo(el,$('h2',el));}
   } else if(params.has('guide')) {
+    // In-page anchor clicks also fire popstate; don't re-render and scroll back to a guide that is already open.
+    if(activeGuide?.id===params.get('guide') && !$('#guide-section').hidden)return;
     if(guides.some(g=>g.id===params.get('guide')))openGuide(params.get('guide'),false);
-    else {appGrid.insertAdjacentHTML('beforebegin','<p class="status-banner">That guide is not in this library. Choose a provider or research it below.</p>');}
+    else if(!$('#missing-guide')){appGrid.insertAdjacentHTML('beforebegin','<p class="status-banner" id="missing-guide">That guide is not in this library. Choose a provider or research it below.</p>');}
+  } else if(!$('#guide-section').hidden) {
+    // Browser Back from an open guide returns to the library instead of leaving a stale guide on screen.
+    $('#guide-section').hidden=true;
+    if(activeGuide)$(`[data-guide="${activeGuide.id}"]`)?.focus({preventScroll:true});
   }
 }
 $$('.filter').forEach(button=>button.addEventListener('click',()=>{
@@ -229,7 +251,11 @@ $('#generate-form').addEventListener('submit',async event=>{
     renderDraft(result);
     status.textContent=`Read ${draft.sources.length} public page${draft.sources.length===1?'':'s'}. ${draft.mode==='ai'?'AI drafted a cited guide.':'Evidence summary ready; AI synthesis was unavailable.'}`;
     history.replaceState(null,'',location.pathname+'#generated-guide');
-  } catch(error){status.classList.add('error');status.textContent=error.name==='TimeoutError'?'Research took too long. Try the direct OAuth documentation URL.':error.message || 'Could not reach the research service. Please try again.';}
+  } catch(error){
+    status.classList.add('error');
+    // fetch() network failures are TypeErrors and non-JSON responses are SyntaxErrors; neither message helps a user.
+    status.textContent=error.name==='TimeoutError'?'Research took too long. Try the direct OAuth documentation URL.':(error instanceof TypeError || error instanceof SyntaxError || !error.message)?'Could not reach the research service. Check your connection and try again.':error.message;
+  }
   finally{button.disabled=false;button.removeAttribute('aria-busy');button.innerHTML='Research this app <span aria-hidden="true">↗</span>';}
 });
 async function initialise() {
@@ -240,6 +266,16 @@ async function initialise() {
 initialise();
 window.addEventListener('popstate',loadSharedState);
 window.addEventListener('hashchange',()=>{if(location.hash.startsWith('#draft='))loadSharedState();});
+// Citations scroll to their source without a hash change, which would re-render a guide or drop a #draft= share payload.
+document.addEventListener('click',event=>{
+  const link=event.target.closest?.('a.inline-citation');
+  const target=link && document.getElementById(link.getAttribute('href').slice(1));
+  if(!target)return;
+  event.preventDefault();
+  moveTo(target);
+  target.querySelector('a')?.focus({preventScroll:true});
+  target.classList.remove('flash');void target.offsetWidth;target.classList.add('flash');
+});
 document.addEventListener('keydown',event=>{if(event.key==='/' && !['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName) && !document.activeElement.isContentEditable){event.preventDefault();searchInput.focus();}});
 window.addEventListener('load',()=>{
   if(!window.gsap || !window.ScrollTrigger || matchMedia('(prefers-reduced-motion: reduce)').matches)return;

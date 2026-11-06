@@ -1,10 +1,15 @@
 # Five-minute demo
 
-1. Open https://oauth-path.kadakchai-panda.workers.dev. Explain that a provider OAuth app is one registration; each user connection is a separate consent/token relationship.
-2. Open GitHub. Show the first action, hands-on estimate, organization-admin blocker, and source references. Check a task and reload to show saved progress.
-3. Open Slack to contrast pilot/commercial distribution, eligibility, and review feedback windows. Open Google to contrast basic identity with sensitive/restricted scope verification.
-4. Research **Linear** by name. Explain that the service reads official pages and uses Workers AI to organize a draft. Show the source list, uncertainties, and human handoffs. If model access fails, point out the clearly marked evidence fallback.
-5. Try a provider the reviewer supplies, preferably with its official website or developer-documentation URL. Ambiguous names request a website instead of guessing. A blocked site should produce uncertainty, not invented steps.
-6. Copy a guide link into a fresh browser, or download Markdown. A generated link is a snapshot; checklist completion remains private to the current browser.
+1. **Frame the problem (30s).** Open https://oauth-path.kadakchai-panda.workers.dev. One provider OAuth app is one registration. Each user's connection is a separate consent. A provider review and a customer admin's approval are two more separate gates.
+2. **GitHub, the light path (60s).** Open GitHub. Point out:
+   - the first action;
+   - the 1–3 hour estimate, labelled ours;
+   - the **Who has to say yes** panel: no central review, but an organization owner may still need to approve.
 
-Be explicit: documentation was checked, but no provider-account registration or approval was completed. Read `docs/evidence.md` for corrections discovered during the assignment and `docs/qa-results.md` for tested behavior.
+   Tick a step and reload to show that progress is saved.
+3. **Contrast Slack and Google (60s).** Slack: provider review is *required for commercial launch*, with feedback windows quoted from Slack, plus the 10-installs-throughout-review rule. Google: review *depends on scopes*, from minutes for automated branding to weeks for restricted data.
+4. **Live research by name (90s).** Type **Calendly** (not in the library). While it runs (~25s), explain the stages: name → Wikidata official site → developer portal and `llms.txt` → ranked OAuth pages → cited AI draft. When it finishes, show the research activity log, the sources, and the approval-wait line. It says no review was established instead of inventing one.
+5. **Reviewer's choice (60s).** Let the reviewer pick an app. If its docs need JavaScript or sign-in, the draft says so and asks for the docs URL. Pasting the developer-docs URL usually gives a sharper draft.
+6. **Share (30s).** Copy the generated guide's link into a private window. It opens the same snapshot without your checklist. Markdown download and Print/PDF also work.
+
+Be explicit: documentation was checked and re-checked, but no provider app was registered and no approval was submitted. See `docs/evidence.md` for the corrections and `docs/qa-results.md` for what was tested.

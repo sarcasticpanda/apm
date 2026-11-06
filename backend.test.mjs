@@ -126,3 +126,91 @@ test('the model cannot invent agent account access or pretend a difficulty label
  assert.ok(!result.agentCan.some(v=>/Create accounts|exchange tokens/.test(v)));
  assert.ok(result.humanMust.some(v=>/Sign in/.test(v)));
 });
+
+test('prototype-key names are not treated as directory entries', async () => {
+  const options = fixture({ 'https://app.example.com/': home, 'https://app.example.com/docs/oauth': docs });
+  for (const name of ['constructor', '__proto__', 'toString', 'hasOwnProperty']) {
+    const result = await research({ name, url: 'https://app.example.com' }, {}, options);
+    assert.equal(result.sources.length, 2, name);
+    assert.ok(!result.activity.some((row) => /directory entry/.test(row.label)), name);
+  }
+});
+
+test('IPv6 loopback, mapped, compatible, and translated forms are not public', () => {
+  for (const address of ['0:0:0:0:0:0:0:1', '0::1', '::7f00:1', '::ffff:127.0.0.1', '::ffff:7f00:1', '64:ff9b::7f00:1', '2002:7f00:1::', '2001:0::1', 'fd12:3456::1', 'febf::1', 'ff02::1', 'not:an:ip::zz']) assert.equal(isPublicAddress(address), false, address);
+  for (const address of ['2606:4700::1111', '2a00:1450:4001:80b::200e']) assert.equal(isPublicAddress(address), true, address);
+});
+
+test('HTML parsing stays linear on unclosed anchors, scripts, and comments', () => {
+  const started = Date.now();
+  extractLinks('<a href="/x">'.repeat(60000), 'https://app.example.com');
+  cleanText('<script>'.repeat(30000) + '<!--'.repeat(30000) + '<b'.repeat(30000));
+  assert.ok(Date.now() - started < 1500, `took ${Date.now() - started}ms`);
+});
+
+const reviewDocs = docs + '<p>Before public launch, submit your app for app review. The review team responds within 5 business days.</p>';
+test('AI summary, difficulty, and approval wait cannot carry unsupported review claims', async () => {
+  const steps = [1, 2, 3].map((n) => ({ title: `Step ${n}`, description: 'Configure the app.', owner: 'You', sourceIds: ['S2'] }));
+  const run = (value, page = docs) => research({ url: 'https://app.example.com' }, { AI: { run: async () => ({ response: { steps, ...value } }) } }, fixture({ 'https://app.example.com/': home, 'https://app.example.com/docs/oauth': page }));
+  const invented = await run({ summary: 'Create an OAuth app in the console. The provider requires a verification review that takes 4 to 6 weeks.', difficulty: 'Requires security assessment by provider (weeks)', approvalWait: '4 to 6 weeks' });
+  assert.equal(invented.summary, 'Create an OAuth app in the console.');
+  assert.equal(invented.difficulty, 'Needs scope and distribution review');
+  assert.match(invented.approvalWait, /No provider review requirement/);
+  const cited = await run({ summary: 'Register an app, then submit it for app review.', difficulty: 'medium', approvalWait: 'Up to 5 business days (S2)' }, reviewDocs);
+  assert.match(cited.summary, /submit it for app review/);
+  assert.equal(cited.difficulty, 'Medium · AI judgment from retrieved docs');
+  assert.equal(cited.approvalWait, 'Up to 5 business days (S2)');
+  const wrongNumber = await run({ approvalWait: 'Up to 3 weeks (S2)' }, reviewDocs);
+  assert.match(wrongNumber.approvalWait, /mentioned in S2, but no waiting time was established/);
+});
+
+test('marketing and sign-in pages are not used as OAuth evidence', async () => {
+  const marketingHome = '<h1>Files for teams</h1><p>Connect your favorite tools through our integrations.</p><a href="/app-integrations/ai-assistant">AI assistant integration with OAuth consent</a><a href="/login">Log in to the developer console</a><a href="/docs/oauth">OAuth guide</a>';
+  const marketing = '<h1>AI assistant</h1><p>Approve OAuth consent to connect the AI assistant plugin to your files in one click.</p>';
+  const login = '<h1>Log in</h1><p>Sign in to continue to the OAuth developer console and manage your client ID.</p>';
+  const calls = [];
+  const AI = { run: async (_m, payload) => { calls.push(JSON.parse(payload.messages[1].content).sources.map((s) => s.url)); return { response: { steps: [1, 2, 3].map((n) => ({ title: `Step ${n}`, description: 'Configure.', owner: 'You', sourceIds: ['S2'] })) } }; } };
+  const result = await research({ url: 'https://files.example.com' }, { AI }, fixture({ 'https://files.example.com/': marketingHome, 'https://files.example.com/app-integrations/ai-assistant': marketing, 'https://files.example.com/login': login, 'https://files.example.com/docs/oauth': docs }));
+  assert.ok(!result.sources.some((s) => /app-integrations|login/.test(s.url)));
+  assert.deepEqual(calls[0], ['https://files.example.com/docs/oauth']);
+});
+
+test('official docs reached through a cross-domain redirect are kept', async () => {
+  const options = fixture({
+    'https://filesapp.com/': '<h1>Files</h1><p>Cloud storage for teams that want secure sharing and simple administration.</p><a href="https://developers.filesapp.com/oauth-guide">Developers</a>',
+    'https://developers.filesapp.com/oauth-guide': () => new Response('', { status: 301, headers: { location: 'https://docs.filesappapi.net/api/oauth' } }),
+    'https://docs.filesappapi.net/api/oauth': docs,
+  });
+  const result = await research({ url: 'https://filesapp.com' }, {}, options);
+  assert.ok(result.sources.some((s) => s.url === 'https://docs.filesappapi.net/api/oauth'));
+  assert.equal(result.oauthSupport, 'documented');
+});
+
+test('a name resolves through Wikidata and an llms.txt index leads to the OAuth page', async () => {
+  const wikidata = (url) => {
+    if (url.includes('wbsearchentities')) return Response.json({ search: [{ id: 'Q1' }, { id: 'Q2' }] });
+    return Response.json({ entities: {
+      Q1: { labels: { en: { value: 'Planly' } }, descriptions: { en: { value: 'village in England' } }, claims: { P856: [{ rank: 'normal', mainsnak: { datavalue: { value: 'https://planly-village.example.org' } } }] } },
+      Q2: { labels: { en: { value: 'Planly Inc.' } }, descriptions: { en: { value: 'scheduling software company' } }, claims: { P856: [{ rank: 'normal', mainsnak: { datavalue: { value: 'https://planlyapp.com/' } } }] } },
+    } });
+  };
+  const options = fixture({
+    'https://planlyapp.com/': '<h1>Planly</h1><p>Scheduling for busy teams and their customers everywhere, with booking pages and reminders.</p>',
+    'https://developer.planlyapp.com/llms.txt': () => new Response('# Planly developer docs\n- [Creating an OAuth app](https://developer.planlyapp.com/docs/oauth-app.md): How to authenticate with OAuth\n- [Pricing](https://planlyapp.com/pricing): plans', { headers: { 'content-type': 'text/plain' } }),
+    'https://developer.planlyapp.com/docs/oauth-app.md': () => new Response('# Creating an OAuth app\nRegister a client ID and redirect URI, then exchange the authorization code for an access token. Request only the scopes you need.', { headers: { 'content-type': 'text/markdown' } }),
+  });
+  const base = options.fetcher;
+  options.fetcher = async (url, init) => url.startsWith('https://www.wikidata.org/') ? wikidata(url) : base(url, init);
+  const result = await research({ name: 'Planly' }, {}, options);
+  assert.equal(result.domain, 'planlyapp.com');
+  assert.ok(result.activity.some((row) => /Wikidata/.test(row.label)));
+  assert.ok(result.sources.some((s) => s.url.endsWith('/docs/oauth-app.md')));
+  assert.ok(!result.sources.some((s) => /llms\.txt|pricing/.test(s.url)));
+  assert.equal(result.oauthSupport, 'documented');
+});
+
+test('Worker rejects oversized bodies before reading them', async () => {
+  const env = { ASSETS: { fetch: async () => new Response('asset') } };
+  const response = await worker.fetch(new Request('https://app.test/api/research', { method: 'POST', headers: { 'content-type': 'application/json', 'content-length': '999999' }, body: '{}' }), env);
+  assert.equal(response.status, 413);
+});

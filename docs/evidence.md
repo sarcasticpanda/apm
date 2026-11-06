@@ -1,6 +1,6 @@
 # Evidence and corrections
 
-Reviewed on **4 November 2026**. This log records documentation checks, not completed provider setup. No provider client secret, OAuth grant, test account, approval submission, or security assessment was created during this audit.
+Reviewed on **4 November 2026** and re-checked on **5 November 2026** (see [second review](#second-review-5-november-2026)). This log records documentation checks, not completed provider setup. No provider client secret, OAuth grant, test account, approval submission, or security assessment was created during this audit.
 
 ## What the product is explaining
 
@@ -27,7 +27,7 @@ The guide's 1–3 hour estimate is our assumption for an existing OAuth backend,
 
 ### Slack
 
-The [OAuth reference](https://docs.slack.dev/authentication/installing-with-oauth/) distinguishes bot and user scopes and HTTPS redirects. The [review process](https://docs.slack.dev/slack-marketplace/slack-marketplace-review-guide/) describes a required demo, test access, and queue behavior.
+The [OAuth reference](https://docs.slack.dev/authentication/installing-with-oauth/) distinguishes bot and user scopes and HTTPS redirects. The [review process](https://docs.slack.dev/slack-marketplace/slack-marketplace-review-guide/) describes a required demo, test access, and queue behavior. Its timing wording is the source of the guide's feedback windows: *"the preliminary part of the review takes up to 10 business days to receive feedback, while the functional review takes up to 10 weeks for new submissions and 6 weeks for published apps resubmitting changes."* The same page says turnaround varies with volume, which is why the guide calls these windows estimates rather than deadlines.
 
 The [submission guidelines](https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/) are particularly relevant to agent builders: an MCP-only product without meaningful Slack functionality can be ineligible.
 
@@ -38,6 +38,27 @@ An unresolved documentation discrepancy remains: the review process requires 10 
 The [app-state overview](https://developers.google.com/identity/protocols/oauth2/production-readiness/overview) distinguishes Internal/External audiences, testing, and Workspace administrator controls. The [sensitive-scope guide](https://developers.google.com/identity/protocols/oauth2/production-readiness/sensitive-scope-verification) publishes a review estimate of up to 10 days. The [restricted-scope guide](https://developers.google.com/identity/protocols/oauth2/production-readiness/restricted-scope-verification) describes potentially several weeks and assessment obligations. The app does not turn those ranges into a promised approval date.
 
 The restricted-scope page still contains a generic brand-review estimate. The guide uses the more specific automated/manual distinction from the [brand page](https://developers.google.com/identity/verification/authentication-verification) and calls out the difference.
+
+## Second review (5 November 2026)
+
+Independent reviewer agents re-fetched every cited URL (all 14 returned HTTP 200 at the same address) and checked each concrete claim. A second set of agents then tried to refute each finding. These corrections survived:
+
+| Earlier wording | Change | Source text |
+| --- | --- | --- |
+| GitHub: "Match redirect behavior to the app settings." | Now states the rule: the redirect host and port must match the callback, the path must sit under it, and wildcard matching is a security risk. | [Authorizing OAuth apps](https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps): "the redirect URL's path must reference a subdirectory of the callback URL" |
+| Google: restricted data "passing through a server" may need an assessment. | Now uses Google's qualifier, "from or through a third-party server", and tells the builder to check how their architecture is classified. | [Restricted scope verification](https://developers.google.com/identity/protocols/oauth2/production-readiness/restricted-scope-verification) |
+| Slack: "requires 10 active workspaces." | Adds that the app must stay at 10 or more installs **throughout the entire review**. | [Installation requirement update](https://docs.slack.dev/changelog/2026/09/01/slack-marketplace-install-requirement/) |
+| Slack: low usage defined by "workspace count and monthly users" (with an unverifiable date label). | States the actual thresholds: fewer than 10 active workspaces **and** fewer than 20 monthly active users. | [Marketplace guidelines](https://docs.slack.dev/slack-marketplace/slack-marketplace-app-guidelines-and-requirements/) |
+
+One finding was refuted on re-check: Google step 3 correctly cites the brand-verification page for homepage, privacy-policy, and domain requirements.
+
+The new **"Who has to say yes"** panels were checked against their cited sources. GitHub's organization owner approval is in [organization restrictions](https://docs.github.com/en/organizations/managing-oauth-access-to-your-organizations-data/about-oauth-app-access-restrictions). Slack's admin approval is under "Enabling admin approval" on [distribution](https://docs.slack.dev/app-management/distribution/). Google's Workspace admin controls are in the [app-state overview](https://developers.google.com/identity/protocols/oauth2/production-readiness/overview). User consent for each provider is in its OAuth flow page.
+
+### What live research trials taught us
+
+- **Dropbox produced a fabricated guide.** A run starting from `dropbox.com` returned a summary about a "SpaceXAI Cursor Marketplace plugin". Root cause: Dropbox's real OAuth guide redirects to another domain (`docs.dropboxapi.com`), and the crawler discarded it as unofficial. It then read marketing pages that mention "OAuth consent". Fixes: a redirect that starts on an official host is now trusted. Only pages with at least two concrete OAuth signals (client ID, redirect URI, authorization code, tokens, scopes, PKCE) reach the model. Marketing and sign-in paths are ranked out. A regression test covers each fix.
+- **App names outside the directory failed.** "Calendly" returned "could not identify", because the web-search fallback is blocked from Cloudflare. Names now resolve through Wikidata's official-website record. A description check stops "Box" becoming an English village. A domain guess is accepted only when the page title names the app.
+- **Model claims needed more gating.** The summary, difficulty, and approval-wait fields could carry an uncited review timeline. A summary sentence about review or timing is now dropped unless retrieved pages support it. An approval wait must cite a page whose text contains the same number and unit. Difficulty is normalized to Low, Medium, or High.
 
 ## How to interpret evidence in generated guides
 

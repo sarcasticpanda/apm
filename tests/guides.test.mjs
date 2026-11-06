@@ -13,6 +13,19 @@ test('curated guides have actionable next steps, bounded estimates, human handof
   for(const ids of g.sourceIdsByStep)for(const id of ids)assert.ok(id>=1&&id<=g.sources.length,`${g.id} source ${id}`);
  }
 });
+test('every guide separates provider review, customer admin, and user consent with cited gates',()=>{
+ for(const g of guides){
+  assert.deepEqual(g.gates.map(gate=>gate.who),['Provider review','Customer admin','User consent'],g.id);
+  for(const gate of g.gates){
+   assert.ok(['none','possible','required','depends','always'].includes(gate.level),`${g.id} ${gate.level}`);
+   assert.ok(gate.status && gate.note && gate.sourceIds.length,`${g.id} ${gate.who}`);
+   for(const id of gate.sourceIds)assert.ok(id>=1&&id<=g.sources.length,`${g.id} gate source ${id}`);
+  }
+ }
+ assert.equal(guides.find(g=>g.id==='github').gates[0].level,'none');
+ assert.equal(guides.find(g=>g.id==='slack').gates[0].level,'required');
+ assert.equal(guides.find(g=>g.id==='google').gates[0].level,'depends');
+});
 test('Slack guide distinguishes commercial review and non-guaranteed feedback windows',()=>{
  const slack=guides.find(g=>g.id==='slack');
  assert.match(slack.wait,/10 business days/);assert.match(slack.wait,/10 weeks/);

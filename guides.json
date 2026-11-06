@@ -20,11 +20,16 @@
     "steps": [
       ["Choose the app type", "An OAuth App acts as a user. Consider a GitHub App for more precise repository permissions or app-only automation.", "YOU + AGENT"],
       ["Register the app", "Open Settings → Developer settings → OAuth Apps. Enter a public app name, homepage, and callback URL. The current form supports up to 10 callbacks.", "YOU"],
-      ["Implement and protect authorization", "Use the documented code flow, validate state, use PKCE where supported, and keep the client secret on your backend. Match redirect behavior to the app settings.", "YOU + AGENT"],
+      ["Implement and protect authorization", "Use the documented code flow, validate state, use PKCE where supported, and keep the client secret on your backend. A redirect_uri must match the callback's host and port and use a path under it; avoid wildcard callback matching unless you control every subdomain and path.", "YOU + AGENT"],
       ["Handle token expiry", "New registration instructions enable expiring user tokens by default. Build refresh handling and test disconnect/reconnect rather than assuming tokens last forever.", "YOU + AGENT"],
       ["Test customer organization access", "Try personal and organization resources separately. If access is restricted, ask the customer's organization owner to review the app; user consent alone is insufficient.", "YOU + CUSTOMER ADMIN"]
     ],
     "sourceIdsByStep": [[1], [1], [2], [1, 2], [3]],
+    "gates": [
+      { "who": "Provider review", "level": "none", "status": "Not in the setup docs", "note": "Registration is self-service. The OAuth App docs describe no central app review.", "sourceIds": [1] },
+      { "who": "Customer admin", "level": "possible", "status": "Possible", "note": "Organizations with OAuth app access restrictions require an owner to approve your app.", "sourceIds": [3] },
+      { "who": "User consent", "level": "always", "status": "Every user", "note": "Each user authorizes your app and the scopes it requests.", "sourceIds": [2] }
+    ],
     "blocker": "If personal access works but private organization data fails, check the organization's OAuth app policy. Send the owner the app name, required scopes, and intended use. Do not keep requesting wider scopes to solve an approval block.",
     "handoffs": {
       "agent": ["Compare app types and draft a minimum-permission plan.", "Generate callback, state, PKCE, and token-lifecycle implementation tasks for developer review."],
@@ -60,18 +65,23 @@
       ["Check whether the product is eligible", "Read the current Marketplace guidelines before building. MCP-only tools, broad data exports, private-beta products, and low-usage apps can be unsuitable.", "YOU + AGENT"],
       ["Create the app and choose permissions", "Use a development workspace. Map features to bot scopes or user scopes; basic Sign in with Slack scopes use a separate flow from API scopes.", "YOU + AGENT"],
       ["Build OAuth v2 and pilot distribution", "Configure an HTTPS redirect and exchange the authorization code on your backend. Complete Manage Distribution's checklist to allow pilot installs in other workspaces.", "YOU + AGENT"],
-      ["Confirm current usage prerequisites", "The review-process page requires 10 active workspaces. Newer guidelines also discuss monthly users. Confirm eligibility in the submission dashboard before scheduling launch.", "YOU"],
+      ["Confirm current usage prerequisites", "Slack requires at least 10 active workspace installations when you submit, and the app must stay at 10 or more throughout the entire review. Confirm eligibility in the submission dashboard before scheduling launch.", "YOU"],
       ["Prepare a reviewable submission", "Provide test accounts with dummy data, a functioning install flow, and a demo of installation through uninstallation. Explain why the working features need their scopes.", "YOU + AGENT"],
       ["Submit and resolve feedback", "Submit through the app settings, address reviewer issues, and allow time for another pass. Preliminary resubmissions can reset queue position; publish after approval.", "YOU + SLACK"]
     ],
     "sourceIdsByStep": [[4, 5], [1], [1, 2], [3, 5, 6], [3], [3]],
+    "gates": [
+      { "who": "Provider review", "level": "required", "status": "For commercial launch", "note": "Commercially distributed apps go through Slack Marketplace review. An unlisted pilot is a separate path.", "sourceIds": [3, 4] },
+      { "who": "Customer admin", "level": "possible", "status": "Possible", "note": "Workspace administrators can restrict which apps members install.", "sourceIds": [2] },
+      { "who": "User consent", "level": "always", "status": "Every install", "note": "The installing user approves the requested bot and user scopes.", "sourceIds": [1] }
+    ],
     "blocker": "An OAuth integration may work technically but fail Marketplace suitability or usage requirements. Start an allowed pilot, build meaningful Slack functionality, and check current eligibility. Avoid promising commercial launch before review.",
     "handoffs": {
       "agent": ["Find required scopes and flag Marketplace suitability risks.", "Draft review instructions, scope explanations, and a test-account checklist."],
       "human": ["Register the app and test with permitted workspaces.", "Provide review accounts and a real product demo; respond to reviewer questions."],
       "provider": ["Slack reviewers approve the Marketplace listing.", "Customer workspace administrators can separately approve or block installation."]
     },
-    "uncertainties": ["The review page says at least 10 active workspaces; November 2026 guidelines define low usage using both workspace count and monthly users. These rules are not identical: confirm current dashboard eligibility rather than assuming a user-count exception.", "Slack's feedback windows vary with queue volume and do not guarantee total time to approval.", "No workspace installation or review was attempted."],
+    "uncertainties": ["The review page requires at least 10 active workspaces, while the guidelines describe low-usage apps as installed on fewer than 10 active workspaces and having fewer than 20 monthly active users. These rules are not identical: confirm current dashboard eligibility rather than assuming a user-count exception.", "Slack's feedback windows vary with queue volume and do not guarantee total time to approval.", "No workspace installation or review was attempted."],
     "sources": [
       ["Install with OAuth v2", "https://docs.slack.dev/authentication/installing-with-oauth/", "Official · OAuth flow"],
       ["App lifecycle and distribution", "https://docs.slack.dev/app-management/distribution/", "Official · distribution"],
@@ -105,9 +115,14 @@
       ["Configure identity and clients", "Prepare a public homepage, privacy policy, contacts, domain ownership, and the appropriate OAuth client redirect settings. Describe the real use of user data.", "YOU"],
       ["Run a limited account test", "Use the Testing audience and eligible test accounts. Check consent, actual API access, denial, disconnect, and token refresh before applying for public use.", "YOU + AGENT"],
       ["Verify and publish branding", "When required, run Verify Branding and then Publish branding. Automated evaluation usually takes minutes; a manual fallback commonly takes 2–3 business days.", "YOU + GOOGLE"],
-      ["Submit data-access evidence", "For applicable sensitive or restricted scopes, provide a feature demo and justification. Restricted data passing through a server may require an annual independent security assessment unless an exception applies.", "YOU + GOOGLE"]
+      ["Submit data-access evidence", "For applicable sensitive or restricted scopes, provide a feature demo and justification. Apps that access restricted data from or through a third-party server must complete an annual security assessment by a Google-approved assessor; check how your architecture is classified and whether an exception applies.", "YOU + GOOGLE"]
     ],
     "sourceIdsByStep": [[1], [2, 3, 5], [4], [1], [4], [2, 3]],
+    "gates": [
+      { "who": "Provider review", "level": "depends", "status": "Depends on scopes", "note": "External apps may need brand verification; sensitive and restricted scopes add data-access review.", "sourceIds": [2, 3, 4] },
+      { "who": "Customer admin", "level": "possible", "status": "Possible", "note": "Google Workspace administrators can restrict which third-party apps access their users' data.", "sourceIds": [1] },
+      { "who": "User consent", "level": "always", "status": "Every user", "note": "Each user sees the consent screen and grants the requested scopes.", "sourceIds": [1] }
+    ],
     "blocker": "If verification asks for more evidence, show how each requested scope supports a working feature and remove unnecessary scopes. Check exceptions and restricted-data assessment needs early; a Workspace admin block requires the customer's admin even after Google verification.",
     "handoffs": {
       "agent": ["Map product features to documented scopes and collect review requirements.", "Draft scope justifications and a demo outline from your actual data flow."],

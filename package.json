@@ -10,7 +10,8 @@
     "test": "node --test backend.test.mjs tests/*.test.mjs",
     "preview": "npm run build && wrangler dev",
     "deploy": "npm run build && wrangler deploy",
-    "test:ui": "node tests/ui.mjs"
+    "test:ui": "node tests/ui.mjs",
+    "test:browsers": "node tests/cross-browser.mjs"
   },
   "engines": {
     "node": ">=22"

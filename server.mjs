@@ -1,6 +1,10 @@
 import http from 'node:http';
 import { readFile } from 'node:fs/promises';
+import { lookup } from 'node:dns/promises';
 import { research, ResearchError } from './research.mjs';
+
+// Check every A and AAAA answer from the same resolver Node's fetch uses.
+const resolveHost = async (host) => (await lookup(host, { all: true, verbatim: true })).map((row) => row.address);
 
 const root = new URL('./', import.meta.url);
 const port = Number(process.env.PORT || 4173);
@@ -44,7 +48,7 @@ const server = http.createServer(async (req, res) => {
       }
       let input;
       try { input = JSON.parse(body); } catch { throw new ResearchError('Enter a valid app name or website.', 400); }
-      respond(res, 200, await research(input));
+      respond(res, 200, await research(input, {}, { resolveHost }));
     } catch (error) { respond(res, error.status || 502, { error: error instanceof ResearchError ? error.message : 'Research could not finish. Please try again.' }); }
     return;
   }

@@ -59,7 +59,8 @@
           <button class="filter" data-filter="review" type="button" aria-pressed="false">Review involved</button>
         </div>
       </div>
-      <div class="app-grid" id="app-grid" aria-live="polite"></div>
+      <div class="app-grid" id="app-grid"></div>
+      <p class="visually-hidden" id="library-status" role="status" aria-live="polite"></p>
       <div class="library-bottom"><p class="library-footnote"><span class="source-dot"></span> Official sources, visible uncertainty, and practical next steps.</p><a class="inline-link" href="#generate">Missing your app? Research it <span aria-hidden="true">↗</span></a></div>
     </section>
     <section class="guide-section" id="guide-section" hidden aria-label="Provider setup guide">
@@ -90,6 +91,7 @@
         <article class="process-row"><span class="process-index" aria-hidden="true">01</span><div><h3>You register your integration</h3><p>Add your app’s identity, a return address called a callback URL, and the permissions it needs. The provider gives you a client ID and, where needed, a secret.</p></div></article>
         <article class="process-row"><span class="process-index" aria-hidden="true">02</span><div><h3>The provider may review your app</h3><p>This depends on the provider, the data you request, and who will use it. A marketplace listing or a customer’s admin approval can be a separate step.</p></div></article>
         <article class="process-row"><span class="process-index" aria-hidden="true">03</span><div><h3>Each user approves a connection</h3><p>The user signs in with the provider and agrees to specific permissions. Your integration receives a token to act on those permissions, without receiving the user’s password.</p></div></article>
+        <article class="process-row managed-row"><span class="process-index" aria-hidden="true">+</span><div><h3>Using a managed OAuth app instead?</h3><p>Some integration platforms let you borrow an OAuth app they already registered and, in some cases, already got reviewed. That can remove steps 01 and 02 for you. Step 03 never goes away: each user still consents, and customer admins keep their controls. Check the trade-offs first. The consent screen normally shows the platform’s app name, and you are usually limited to the scopes that app was approved for.</p></div></article>
       </div>
     </section>
     <section class="evidence-section section-wrap" id="evidence" aria-labelledby="evidence-title">

@@ -21,6 +21,7 @@ export default {
       current.count += 1;
       limits.set(key, current);
       if (current.count > 6) return json({ error: 'Research limit reached. Please wait a minute and try again.' }, 429);
+      if (Number(request.headers.get('content-length')) > 4096) return json({ error: 'Request is too large.' }, 413);
       try {
         const body = await request.text();
         if (body.length > 4096) return json({ error: 'Request is too large.' }, 413);
