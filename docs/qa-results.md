@@ -67,7 +67,7 @@ Before the fixes, the same run failed on Calendly ("could not identify"), produc
   - em-dashes;
   - rows of three equal cards.
 
-  The new design is a route board. Each provider's approval path is one line with shape-coded gates. It uses a cool neutral palette with one cobalt accent, self-hosted IBM Plex, Phosphor icons, and full dark mode. Motion is limited to one route-drawing animation, which is off under reduced motion. It was checked by screenshot at 1440, 390, and 320 px in light and dark mode, and the whole page has no horizontal overflow.
+  A first redesign used a cool grey palette. The owner judged it too plain and asked to bring back the original green identity, done properly. The final design keeps the original brand: forest green, the lime from the first logo, and warm paper. It adds a dark hero with an interactive route explorer (pick a provider to trace its gates), provider cards with a compact vertical route, a dark trail panel for "Who has to say yes", and a dark checklist card. Type is Bricolage Grotesque for display, Outfit for text, and DM Mono for small labels. Motion is limited to meaningful moments: route lines drawing in, and the explorer re-tracing when a provider is picked. It was checked at 1440, 390, and 320 px in light and dark mode, with no horizontal overflow and 0 axe violations, including after using the explorer.
 
 ## Limits of validation
 

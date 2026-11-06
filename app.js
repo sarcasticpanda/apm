@@ -27,8 +27,10 @@ function dateLabel(value) {
   const date = new Date(value);
   return Number.isFinite(date.getTime()) ? date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Asia/Kolkata' }) : 'date unavailable';
 }
+const TONES = new Set(['github', 'slack', 'google', 'dropbox', 'microsoft', 'spotify']);
 function logo(guide) {
-  return `<span class="app-logo" aria-hidden="true">${escapeHtml(guide.mark || guide.name.slice(0, 2))}</span>`;
+  const tone = TONES.has(guide.id) ? guide.id : 'custom';
+  return `<span class="app-logo tone-${tone}" aria-hidden="true">${escapeHtml(guide.mark || guide.name.slice(0, 2))}</span>`;
 }
 function moveTo(element, focusTarget) {
   element.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth', block: 'start' });
@@ -50,16 +52,44 @@ function renderLibrary() {
   appGrid.innerHTML = matches.length ? matches.map((g, index) => {
     const band = g.band === 'light' ? 'light' : 'review';
     return `<button class="app-card band-${band}" type="button" data-guide="${escapeHtml(g.id)}" aria-label="Open ${escapeHtml(g.name)} setup guide" aria-describedby="route-${escapeHtml(g.id)}" style="--i:${index}">
-      <span class="row-id">${logo(g)}<span class="row-name"><strong>${escapeHtml(g.name)}</strong><span class="effort-label">${escapeHtml(g.effort)}</span></span></span>
+      <span class="card-top">${logo(g)}<span class="effort-label">${escapeHtml(g.effort)}</span></span>
+      <span class="card-name">${escapeHtml(g.name)}</span>
+      <span class="tagline">${escapeHtml(g.tagline)}</span>
       <span class="route" id="route-${escapeHtml(g.id)}">${routeStops(g)}</span>
-      <span class="row-time"><span><small>Hands-on, our estimate</small><strong>${escapeHtml(g.time.split(' · ')[0])}</strong></span><span><small>Approval</small><strong class="stat-${band}">${escapeHtml(g.waitSummary || g.wait)}</strong></span></span>
-      <span class="row-go" aria-hidden="true">${icon('caret-right')}</span>
-      <span class="row-tagline">${escapeHtml(g.tagline)}</span>
+      <span class="card-stats"><span><small>Hands-on, our estimate</small><strong>${escapeHtml(g.time.split(' · ')[0])}</strong></span><span><small>Approval</small><strong class="stat-${band}">${escapeHtml(g.waitSummary || g.wait)}</strong></span></span>
+      <span class="card-go" aria-hidden="true">Open the guide${icon('caret-right')}</span>
     </button>`;
   }).join('') : '<div class="empty-results"><strong>No matching guide yet.</strong><p>Try another search, or research the app from its public docs.</p><a class="button button-secondary" href="#generate">Research an app</a></div>';
   firstRender = false;
   $$('[data-guide]', appGrid).forEach(button => button.addEventListener('click', () => openGuide(button.dataset.guide)));
   $('#library-status').textContent = `${matches.length} of ${guides.length} guides shown`;
+}
+// Hero route explorer: tabs (one per provider) switch a vertical trail of that provider's gates.
+let explorerId = 'slack';
+function renderExplorer(focusTab = false, animate = true) {
+  const tabs = $('#explorer-tabs'); const panel = $('#explorer-panel');
+  if (!tabs || !panel || !guides.length) return;
+  if (!guides.some(g => g.id === explorerId)) explorerId = guides[0].id;
+  const g = guides.find(guide => guide.id === explorerId);
+  tabs.innerHTML = guides.map(guide => `<button type="button" role="tab" class="explorer-tab" id="explore-tab-${escapeHtml(guide.id)}" data-explore="${escapeHtml(guide.id)}" aria-selected="${guide.id === explorerId}" aria-controls="explorer-panel" tabindex="${guide.id === explorerId ? 0 : -1}">${logo(guide)}<span>${escapeHtml(guide.name)}</span></button>`).join('');
+  panel.setAttribute('aria-labelledby', `explore-tab-${g.id}`);
+  const stops = [{ who: 'Register', level: 'start', status: 'Self-service', note: 'You create the app in the provider’s developer console and get a client ID.' }, ...list(g.gates, 3).filter(gate => gate && GATE_LEVELS[gate.level])];
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  panel.innerHTML = `<ol class="trail${animate && !reduce ? ' animate-trail' : ''}">${stops.map((stop, i) => `<li class="trail-stop stop-${stop.level}" style="--i:${i}"><span class="gate-mark mark-${stop.level}" aria-hidden="true"></span><div class="trail-copy"><span class="trail-who">${escapeHtml(stop.who)}<span class="visually-hidden">: </span></span><strong class="trail-status">${escapeHtml(stop.status)}</strong><p>${escapeHtml(stop.note)}</p></div></li>`).join('')}</ol>
+    <div class="explorer-foot"><dl><div><dt>Hands-on</dt><dd>${escapeHtml(g.time.split(' · ')[0])}</dd></div><div><dt>Approval</dt><dd>${escapeHtml(g.waitSummary || g.wait)}</dd></div></dl><button type="button" class="button button-lime button-small" data-open-guide="${escapeHtml(g.id)}">Open the ${escapeHtml(g.name)} guide</button></div>`;
+  $$('[data-explore]', tabs).forEach(tab => {
+    tab.addEventListener('click', () => { if (tab.dataset.explore !== explorerId) { explorerId = tab.dataset.explore; renderExplorer(true); } });
+    tab.addEventListener('keydown', event => {
+      const ids = guides.map(guide => guide.id); const at = ids.indexOf(explorerId);
+      const next = { ArrowRight: at + 1, ArrowDown: at + 1, ArrowLeft: at - 1, ArrowUp: at - 1, Home: 0, End: ids.length - 1 }[event.key];
+      if (next === undefined) return;
+      event.preventDefault();
+      explorerId = ids[(next + ids.length) % ids.length];
+      renderExplorer(true);
+    });
+  });
+  $('[data-open-guide]', panel).addEventListener('click', () => openGuide(g.id));
+  if (focusTab) $(`#explore-tab-${explorerId}`)?.focus();
 }
 function citations(ids, sources, prefix) {
   return list(ids).map(id => {
@@ -84,7 +114,7 @@ function ownerClass(owner = '') {
 function gatesMarkup(gates, sources, prefix) {
   const rows = list(gates, 4).filter(gate => gate && GATE_LEVELS[gate.level]);
   if (!rows.length) return '';
-  return `<section class="guide-block gates-block" aria-labelledby="${prefix}-gates-title"><h3 id="${prefix}-gates-title">Who has to say yes</h3><p>Provider review, customer administration, and user consent are separate decisions with separate owners. Plan for each one that applies.</p><ol class="gate-route">${rows.map(gate => `<li class="gate gate-${gate.level}"><span class="gate-mark mark-${gate.level}" aria-hidden="true"></span><span class="gate-who">${escapeHtml(gate.who)}<span class="visually-hidden">: </span></span><strong class="gate-status">${escapeHtml(gate.status)}<span class="visually-hidden">. </span></strong><p>${escapeHtml(gate.note)} ${citations(gate.sourceIds, sources, prefix)}</p></li>`).join('')}</ol></section>`;
+  return `<section class="guide-block gates-block" aria-labelledby="${prefix}-gates-title"><h3 id="${prefix}-gates-title">Who has to say yes</h3><p>Provider review, customer administration, and user consent are separate decisions with separate owners. Plan for each one that applies.</p><div class="gates-panel"><ol class="gate-route">${rows.map(gate => `<li class="gate gate-${gate.level}"><span class="gate-mark mark-${gate.level}" aria-hidden="true"></span><span class="gate-who">${escapeHtml(gate.who)}<span class="visually-hidden">: </span></span><strong class="gate-status">${escapeHtml(gate.status)}<span class="visually-hidden">. </span></strong><p>${escapeHtml(gate.note)} ${citations(gate.sourceIds, sources, prefix)}</p></li>`).join('')}</ol></div></section>`;
 }
 function progressFor(id, count) {
   return list(storage.get(`oauthpath:${id}:steps`), count).filter(i => Number.isInteger(i) && i >= 0 && i < count);
@@ -120,7 +150,7 @@ function openGuide(id, updateUrl = true) {
   const steps = g.steps.map(([title, description, owner], i) => ({ title, description, owner, sourceIds: g.sourceIdsByStep?.[i] || [] }));
   const done = progressFor(id, steps.length);
   $('#guide-content').innerHTML = `
-    <div class="guide-title-row">${logo(g)}<div><h2 class="guide-title">${escapeHtml(g.name)}</h2><p class="guide-kicker">${escapeHtml(g.effort)}</p></div></div>
+    <div class="guide-title-row">${logo(g)}<div><h2 class="guide-title">${escapeHtml(g.name)}</h2><p class="guide-kicker${g.band === 'light' ? ' kicker-light' : ''}">${escapeHtml(g.effort)}</p></div></div>
     <p class="guide-subtitle">${escapeHtml(g.summary)}</p>
     ${factsMarkup([['Hands-on work', g.time], ['Approval and wait', g.wait], ['Effort', g.effortLabel]])}
     <div class="callout callout-start"><strong>Start here</strong><p>${escapeHtml(g.firstAction)}</p></div>
@@ -305,10 +335,10 @@ $('#generate-form').addEventListener('submit', async event => {
   }
 });
 async function initialise() {
-  appGrid.innerHTML = `<div class="route-skeleton" role="status"><span class="visually-hidden">Loading the guide library</span>${'<span class="skeleton-row"></span>'.repeat(3)}</div>`;
+  appGrid.innerHTML = `<div class="route-skeleton" role="status"><span class="visually-hidden">Loading the guide library</span>${'<span class="skeleton-row"></span>'.repeat(6)}</div>`;
   try {
     const response = await fetch('/guides.json'); if (!response.ok) throw new Error();
-    guides = await response.json(); renderLibrary(); await loadSharedState();
+    guides = await response.json(); renderLibrary(); renderExplorer(false, false); await loadSharedState();
   } catch {
     appGrid.innerHTML = '<div class="empty-results"><strong>The guide library couldn’t load.</strong><p>Check your connection, then try again.</p><button class="button button-secondary" id="retry-library" type="button">Try again</button></div>';
     $('#retry-library').onclick = initialise;

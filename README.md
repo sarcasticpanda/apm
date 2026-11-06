@@ -64,14 +64,14 @@ npm run deploy         # copies public assets to .output/public and deploys work
 
 `wrangler.jsonc` defines the Worker, the static-assets binding, the Workers AI binding, and the Browser Rendering binding (`BROWSER`, with `nodejs_compat` for `@cloudflare/puppeteer`). No secrets are needed; keep Cloudflare credentials in Wrangler's login, never in the repo.
 
-**Stack:** vanilla HTML, CSS, and JavaScript (no framework or client bundle). It uses self-hosted IBM Plex Sans and Mono (OFL) from `@fontsource` and Phosphor icons (MIT); `scripts/build-icons.mjs` generates `icons.js`. It supports light and dark mode from the system setting and respects reduced motion.
+**Stack:** vanilla HTML, CSS, and JavaScript (no framework or client bundle). It uses self-hosted Bricolage Grotesque, Outfit, and DM Mono (OFL) from `@fontsource` and Phosphor icons (MIT); `scripts/build-icons.mjs` generates `icons.js`. It supports light and dark mode from the system setting and respects reduced motion.
 
 ## Key decisions
 
 - **Separate the gates.** The core confusion is that registering an app, a provider's review, a customer admin's approval, and each user's consent are different decisions with different owners and timelines. Every guide models them separately so "it works in my account" is never mistaken for "approved for launch".
 - **Six deep guides beat 100 shallow ones.** The take-home asks for a few varied apps. Each guide was drafted from official pages only, attacked claim by claim by a separate fact-checking agent, corrected, and its headline numbers re-checked by hand against the live pages. The live agent covers the long tail.
 - **Effort and waiting are different numbers.** Hands-on estimates are labelled ours and exclude waiting. Provider review windows are quoted from the provider and never presented as a launch date.
-- **Show the route, not a wall of text.** The library is a route board. Each provider is one line through Register, Provider review, Customer admin, and User consent, with each gate's state drawn from the guide data. Gate states use shape and text as well as colour, so they read without colour vision and in dark mode.
+- **Show the route, not a wall of text.** The hero has a route explorer: pick a provider and its path through Register, Provider review, Customer admin, and User consent is traced with each gate's state from the guide data. Every provider card repeats that route in compact form. Gate states use shape and text as well as colour, so they read without colour vision and in dark mode.
 - **Honesty over coverage.** When the agent cannot find OAuth docs, it says so and gives the next action. It never fills the gap with plausible-sounding policy.
 - **Managed OAuth apps.** Borrowing a platform's pre-registered (and possibly pre-reviewed) app can remove registration and provider review. It does not remove user consent or customer-admin controls, and it usually limits you to that app's approved scopes and branding. The site explains this trade-off; it does not assume any specific vendor.
 
