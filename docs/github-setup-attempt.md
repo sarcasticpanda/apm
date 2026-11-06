@@ -46,9 +46,39 @@ The script records:
 
 It never prints or saves the token itself. The redacted report is saved to `artifacts/github-setup-attempt.json`.
 
-## 3. Results of the real registration
+## 3. Results of the real registration (7 November 2026)
 
-Not run yet. Once the steps above are done, record here:
-- what the form showed;
-- the token behaviour;
-- anything that differed from the GitHub guide.
+A person (the project owner) registered a real OAuth App called **OAuth Path test** and authorized it with the device flow. The agent drove the browser with Playwright where GitHub allowed it. The redacted report is `artifacts/github-setup-attempt.json`; it contains no token.
+
+**Registration form, observed**
+
+| Guide claim | What the form showed | Verdict |
+| --- | --- | --- |
+| Up to 10 callback URLs | "You may add up to 10 redirect URIs" | Confirmed |
+| Avoid wildcard callback matching | An **Allow wildcard matching** checkbox, off by default, with a warning that it sends tokens to all subdomains and paths | Confirmed |
+| Expiring user tokens are on by default | **Expire user access tokens** was ticked by default | Confirmed |
+| Device flow must be enabled per app | **Enable Device Flow** checkbox; the agent's earlier unregistered probe got 404 until a real app had it ticked | Confirmed |
+
+**Consent screen, observed**
+
+- Title: "Authorize OAuth Path test", "by Saubhagya Kashyap", "wants to access your account".
+- Requested access: **Personal user data: Profile information (read-only)**, matching the `read:user` scope.
+- Trust signals shown to the user: "**Not** owned or operated by GitHub", "Created **less than a day ago**", "**Fewer than 10** GitHub users", and the requesting location and time.
+- **The Authorize button stayed disabled while an automated browser was in control.** It worked only when the person clicked it. This is the clearest evidence for the agent and human boundary: an agent can prepare everything, but user consent has to come from the user.
+
+**Token and API call, observed**
+
+| Check | Result |
+| --- | --- |
+| Device code request | 200, code valid for 15 minutes, poll every 5 seconds |
+| Token issued after Authorize | bearer token, granted scope `read:user` |
+| Access token lifetime | **8 hours** (expires_in 28800) |
+| Refresh token | **Issued**, valid for about **6 months** (15,638,400 seconds) |
+| API call with the token | `GET /user` returned 200, `X-OAuth-Scopes: read:user` |
+| Refresh exchange | Not run: it needs the client secret, which was deliberately never created |
+
+**What this changed in the GitHub guide:** the token-expiry step now states the observed 8-hour and 6-month lifetimes. The evidence status records a real end-to-end test. A new hand-off notes that a person must click Authorize.
+
+**Not tested:** organization access restrictions (needs an organization with restrictions enabled), wider scopes, and token refresh.
+
+**Clean-up:** revoke the authorization at https://github.com/settings/applications (Authorized OAuth Apps), then delete the app under Developer settings when it is no longer needed for a demo.

@@ -15,7 +15,7 @@
     "caveat": "This path covers GitHub.com OAuth Apps, not GitHub App registration or a Marketplace listing. A user's authorization and an organization owner's approval are different decisions.",
     "estimateBasis": "Our estimate covers registration, adapting an existing OAuth backend, and a first account test. It excludes building your integration, production security work, and waiting for customer administrators. It is not a GitHub estimate.",
     "checkedAt": "2026-11-04",
-    "evidenceStatus": "Official documentation reviewed. No provider account setup or token exchange attempted.",
+    "evidenceStatus": "Official documentation reviewed, and a real OAuth App was registered and authorized end to end on 7 November 2026 (device flow, read:user). See docs/github-setup-attempt.md.",
     "firstAction": "Compare OAuth Apps and GitHub Apps, then open your account's Developer settings.",
     "steps": [
       [
@@ -35,7 +35,7 @@
       ],
       [
         "Handle token expiry",
-        "New registration instructions enable expiring user tokens by default. Build refresh handling and test disconnect/reconnect rather than assuming tokens last forever.",
+        "New registration instructions enable expiring user tokens by default. Build refresh handling and test disconnect/reconnect rather than assuming tokens last forever. In our 7 November 2026 test, the access token expired after 8 hours and came with a refresh token valid for about 6 months.",
         "YOU + AGENT"
       ],
       [
@@ -99,14 +99,15 @@
       ],
       "human": [
         "Register the provider app, store credentials, and run an authorized account test.",
-        "Request customer organization approval when needed."
+        "Request customer organization approval when needed.",
+        "Click Authorize on the consent screen yourself: in our test GitHub kept the button disabled for an automated browser."
       ],
       "provider": [
         "Customer organization owners decide whether to allow access to their resources."
       ]
     },
     "uncertainties": [
-      "No account-level setup was attempted; console appearance and account eligibility were not tested.",
+      "Our live test covered one personal account with the read:user scope; organization access restrictions and wider scopes were not tested.",
       "Customer administrator turnaround is not controlled by GitHub registration.",
       "Enterprise Server versions can differ from GitHub.com token behavior."
     ],

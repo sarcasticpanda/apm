@@ -85,7 +85,7 @@ npm run deploy         # copies public assets to .output/public and deploys work
 
 ## Limits
 
-- The agent attempted each provider's real authorization endpoints without an account. Every provider stopped it at registration and sign-in, as expected; see [docs/github-setup-attempt.md](docs/github-setup-attempt.md). A real GitHub registration and token test is scripted (`npm run setup:github`), but it needs a person's GitHub account. No provider review was submitted.
+- **A real GitHub OAuth App was registered and authorized end to end** (7 November 2026). The form, the consent screen, an 8-hour expiring token with a 6-month refresh token, and a working API call all matched the guide. GitHub kept Authorize disabled for the automated browser, so a person gave consent. Without an account, the agent's probes of GitHub, Slack, and Google stopped at registration. See [docs/github-setup-attempt.md](docs/github-setup-attempt.md). No provider review was submitted, and Slack and Google setups were not run with real accounts.
 - The crawler reads server-rendered HTML, Markdown, and `llms.txt`, and renders up to two JavaScript-only pages per request. Docs behind sign-in still can't be read; the draft says so and asks for the docs URL. Browser Rendering has daily free-plan limits, and when they run out the draft falls back to what plain fetching found.
 - The model can still misread a source. Drafts are labelled, cited, and meant to be reviewed before a launch commitment.
 - Rate limiting is per Worker isolate (a demo guard, not production abuse control). On the local Node server, the DNS check and the fetch resolve separately, so a rebinding window remains. Cloudflare's egress cannot reach private networks.

@@ -70,6 +70,10 @@ Dropbox, Microsoft, and Spotify were added because each has a different hardest 
 
 Open questions stay in each guide's uncertainties. For example: Dropbox publishes no review duration; Spotify's 250k MAU counting method and the Partner Application form's timing are not documented; Microsoft's Partner Center role names differ between two pages.
 
+### Real GitHub setup (7 November 2026)
+
+A real OAuth App was registered and authorized with the device flow. The registration form confirmed the guide's claims: 10 redirect URIs, a wildcard-matching option that is off by default, and expiring user tokens on by default. The issued token expired after 8 hours, came with a 6-month refresh token, and worked for `GET /user`. GitHub kept Authorize disabled for the automated browser. Full results are in [github-setup-attempt.md](github-setup-attempt.md).
+
 ### What live research trials taught us
 
 - **Dropbox produced a fabricated guide.** A run starting from `dropbox.com` returned a summary about a "SpaceXAI Cursor Marketplace plugin". Root cause: Dropbox's real OAuth guide redirects to another domain (`docs.dropboxapi.com`), and the crawler discarded it as unofficial. It then read marketing pages that mention "OAuth consent". Fixes: a redirect that starts on an official host is now trusted. Only pages with at least two concrete OAuth signals (client ID, redirect URI, authorization code, tokens, scopes, PKCE) reach the model. Marketing and sign-in paths are ranked out. A regression test covers each fix.
